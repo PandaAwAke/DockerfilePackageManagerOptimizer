@@ -1,13 +1,14 @@
 import logging
 import re
 
+import handle_error
 from stats import stats
 
 
 class GlobalOptimizer:
 
     def __init__(self):
-        self.syntax_directive_re = re.compile(r'^\s*#\s*syntax\s*=\s*(.*?)\s*$', re.I)
+        self.syntax_directive_re = re.compile(r'^\s*syntax\s*=\s*(.*?)\s*$', re.I)
 
     def optimizable(self, stages: list) -> bool:
         """
@@ -66,7 +67,7 @@ class GlobalOptimizer:
                         official_dockerfile_version = syntax_lower[len('docker.io/docker/dockerfile:'):]
                     else:
                         logging.error('This dockerfile uses a non-official frontend, I cannot handle this.')
-                        exit(-1)
+                        raise handle_error.HandleError()
                     versions = official_dockerfile_version.split('.')
                     if len(versions) == 1 and versions[0] != '0':      # dockerfile:1
                         need_to_update_syntax = False
@@ -79,10 +80,10 @@ class GlobalOptimizer:
 
         if need_to_add_syntax:
             new_stages_lines[0].insert(0, '# syntax=docker/dockerfile:1.3\n')
-            stats.syntax_change = 1  # Stats
+            stats.syntax_change()  # Stats
         elif need_to_update_syntax:
             new_stages_lines[0][syntax_line_index] = '# syntax=docker/dockerfile:1.3\n'
-            stats.syntax_change = 1  # Stats
+            stats.syntax_change()  # Stats
 
     def _get_syntax(self, value: str):
         # syntax directive regex
