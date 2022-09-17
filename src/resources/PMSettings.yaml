@@ -1,0 +1,42 @@
+packageManagers:
+  npm:
+    executables:
+      - npm
+    commands-regex-run:
+      - run build
+    default-cache-dirs:
+      - ~/.npm/
+    commands-regex-modify-cache-dir:
+      - ^config set prefix (\S+)\s*
+
+  pip:
+    executables:
+      - pip
+    commands-regex-run:
+      - .*install.*
+    default-cache-dirs:
+      - ~/.cache/pip
+
+  apt:
+    executables:
+      - apt
+      - apt-get
+    commands-regex-run:
+      - .*install.*
+      - .*update.*
+    default-cache-dirs:
+      - /var/lib/apt
+      - /var/cache/apt
+    additional-pre-commands:
+      - rm -f /etc/apt/apt.conf.d/docker-clean; echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache
+
+  go:
+    executables:
+      - go
+    commands-regex-run:
+      - .*build.*
+      - .*get.*
+      - .*install.*
+    default-cache-dirs:
+      - ~/.cache/go-build
+

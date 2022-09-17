@@ -1,0 +1,19 @@
+# comment
+ From  \
+   base
+ #    another   comment
+ label  foo  \
+# interrupt LABEL
+    bar  
+USER  root
+# comment \
+# with \ 
+# backslashes \\ 
+#no space after hash
+# comment # with hash inside
+RUN command1
+RUN command2 && \
+    command3
+RUN command4 && \
+# interrupt RUN
+    command5
