@@ -2,20 +2,23 @@ import logging
 import getopt
 import os
 
-import handle_error
-from stage_splitter import StageSplitter
-from simulator import Simulator
+from model import handle_error
+
+from pipeline.stage_splitter import StageSplitter
+from pipeline.simulator import Simulator
+from pipeline.dockerfile_writer import DockerfileWriter
+
 from optimize.stage_optimizer import StageOptimizer
 from optimize.global_optimizer import GlobalOptimizer
-from dockerfile_writer import DockerfileWriter
-from stats import stats
+
+from model.stats import stats
 
 from dockerfile_parse import DockerfileParser
 
 
 def _print_usage():
     usage = \
-        """Usage: python main.py [OPTIONS] INPUT
+        """Usage: python src/main.py [OPTIONS] INPUT
 If INPUT is a directory, all files (including subdirectory) in it will be optimized.
 
 Options:

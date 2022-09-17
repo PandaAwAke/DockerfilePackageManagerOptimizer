@@ -1,10 +1,10 @@
 import logging
 import re
 
-import handle_error
+from model import handle_error
 from optimize.optimization_strategy import *
 
-from stats import stats
+from model.stats import stats
 
 
 class StageOptimizer(object):

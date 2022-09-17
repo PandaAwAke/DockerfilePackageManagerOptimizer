@@ -3,8 +3,8 @@ import logging
 import yaml
 import re
 
-import handle_error
-from global_status import GlobalStatus
+from model import handle_error
+from model.global_status import GlobalStatus
 from optimize.optimization_strategy import *
 
 
@@ -34,7 +34,7 @@ def load_pm_settings():
     if len(pm_settings) > 0:
         return
     try:
-        f = open(file='src/resources/PMSettings.yaml', mode='r', encoding='utf-8')
+        f = open(file='resources/PMSettings.yaml', mode='r', encoding='utf-8')
         pm_yaml_settings = yaml.safe_load(f)
     except Exception as e:  # Including: IOError, yaml.YAMLError
         logging.error(e)

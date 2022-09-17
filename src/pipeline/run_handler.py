@@ -1,7 +1,7 @@
 import re
 
-from global_status import GlobalStatus
-from pm_handler import PMHandler
+from model.global_status import GlobalStatus
+from pipeline.pm_handler import PMHandler
 
 
 class RunHandler(object):

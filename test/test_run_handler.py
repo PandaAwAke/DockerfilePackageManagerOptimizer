@@ -1,7 +1,6 @@
 import unittest
 
-import run_handler
-import simulator
+from pipeline import simulator, run_handler
 
 
 class TestRunHandler(unittest.TestCase):
@@ -10,7 +9,7 @@ class TestRunHandler(unittest.TestCase):
         self.rh = run_handler.RunHandler(simulator.GlobalStatus())
 
     def test_handle_user(self):
-        self.rh.handle(' useradd -d /home/panda panda   &&   \n usermod -d /root root')
+        self.rh.handle(' useradd -d /home/panda panda   &&   \n usermod -d /root root', -1)
         self.assertEqual(self.rh.global_status.user_dirs,
                          {'panda': '/home/panda/', 'root': '/root/'})
 

@@ -1,8 +1,8 @@
 import logging
 import re
 
-import handle_error
-from stats import stats
+from model import handle_error
+from model.stats import stats
 
 
 class GlobalOptimizer:

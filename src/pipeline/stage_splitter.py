@@ -2,7 +2,7 @@ import logging
 
 import dockerfile_parse
 
-import handle_error
+from model import handle_error
 
 
 class StageSplitter(object):

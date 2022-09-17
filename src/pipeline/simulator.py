@@ -1,5 +1,5 @@
-from global_status import GlobalStatus
-from run_handler import RunHandler
+from model.global_status import GlobalStatus
+from pipeline.run_handler import RunHandler
 
 
 class Simulator(object):
