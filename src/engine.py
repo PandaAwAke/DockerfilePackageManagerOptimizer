@@ -47,7 +47,7 @@ class Engine(object):
         try:
             opts, args = getopt.getopt(argv, 'ho:s:')
         except getopt.GetoptError as e:
-            logging.error('Invalid option: {0}'.format(e.opt))
+            logging.error('Invalid option: "{0}"'.format(e.opt))
             exit(-1)
         if len(opts) > 0 and opts[0][0] == '-h':
             _print_usage()
@@ -95,7 +95,7 @@ class Engine(object):
             splitter = StageSplitter(dockerfile=dockerfile_in)
             stages = splitter.get_stages()
             if len(stages) == 0:
-                logging.error('No stage is found in {0}! Is it correct?'.format(input_file))
+                logging.error('No stage is found in "{0}"! Is it correct?'.format(input_file))
                 return
 
             if len(stages[0]) == 0:
@@ -104,7 +104,7 @@ class Engine(object):
 
             global_optimizer = GlobalOptimizer()
             if not global_optimizer.optimizable(stages):
-                logging.error('{0} uses a non-official frontend, I cannot handle this.'.format(input_file))
+                logging.error('"{0}" uses a non-official frontend, I cannot handle this.'.format(input_file))
                 return
 
             new_stages_lines = []

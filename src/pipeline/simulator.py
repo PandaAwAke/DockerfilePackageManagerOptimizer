@@ -8,9 +8,12 @@ class Simulator(object):
         self.global_status = GlobalStatus()
         self.run_handler = RunHandler(self.global_status)
 
-    def simulate(self):
-        instruction_index = 0
-        for instruction in self.instructions:
+    def simulate(self, start_instruction_index=0, end_instruction_index=-1):
+        if end_instruction_index < 0 or end_instruction_index > len(self.instructions):
+            end_instruction_index = len(self.instructions)
+        assert 0 <= start_instruction_index <= end_instruction_index
+        for instruction_index in range(start_instruction_index, end_instruction_index):
+            instruction = self.instructions[instruction_index]
             i_type: str = instruction['instruction']
             value: str = instruction['value']
             # Other types of instructions are ignored
@@ -32,7 +35,6 @@ class Simulator(object):
             #     ...
             # elif i_type == "ARG" or i_type == "ENV":
             #     ...
-            instruction_index += 1
 
     def get_optimization_strategies(self):
         return self.run_handler.pm_handler.optimization_strategies

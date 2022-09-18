@@ -50,10 +50,10 @@ def load_pm_settings():
             additional_pre_commands=pm_yaml_dict.get('additional-pre-commands') or []
         )
         if len(pm_setting.commands_regex_run) == 0:
-            logging.error('commands-regex-run is not set for {0}!'.format(pm_name))
+            logging.error('commands-regex-run is not set for "{0}"!'.format(pm_name))
             exit(-1)
         if len(pm_setting.default_cache_dirs) == 0:
-            logging.error('default-cache-dirs is not set for {0}!'.format(pm_name))
+            logging.error('default-cache-dirs is not set for "{0}"!'.format(pm_name))
             exit(-1)
         pm_settings[pm_name] = pm_setting
     f.close()
@@ -67,7 +67,8 @@ class PMHandler(object):
         self.optimization_strategies = []
         load_pm_settings()
 
-    def is_package_manager_executable(self, executable: str) -> bool:
+    @staticmethod
+    def is_package_manager_executable(executable: str) -> bool:
         for pm_name, pm_setting in pm_settings.items():
             if executable in pm_setting.executables:
                 return True
@@ -120,11 +121,12 @@ class PMHandler(object):
             # Note: additional_pre_commands are only added once in a stage!
             #   This means that multiple apt-get instructions will result in only once command addition
             if len(pm_settings[pm_name].additional_pre_commands) > 0 and \
-                    self.pm_statuses[pm_name].pre_commands_added == False:
+                    not self.pm_statuses[pm_name].pre_commands_added:
                 self.optimization_strategies.append(InsertBeforeStrategy(
                     instruction_index=instruction_index,
                     commands_insert=pm_settings[pm_name].additional_pre_commands
                 ))
+                self.pm_statuses[pm_name].pre_commands_added = True
             # Generate AddCacheStrategy
             self.optimization_strategies.append(AddCacheStrategy(
                 instruction_index=instruction_index,

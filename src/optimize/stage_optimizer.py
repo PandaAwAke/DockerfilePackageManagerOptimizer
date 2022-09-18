@@ -64,7 +64,7 @@ class StageOptimizer(object):
 
     def _optimize_add_cache(self, strategy: AddCacheStrategy, instruction: dict):
         if instruction['instruction'] != 'RUN':
-            logging.error('Tried to optimize a non-RUN instruction: {0}'.format(instruction['content']))
+            logging.error('Tried to optimize a non-RUN instruction: "{0}"'.format(instruction['content']))
             raise handle_error.HandleError()
 
         # Search if there's already "--mount=type=cache" inside the command
@@ -72,26 +72,27 @@ class StageOptimizer(object):
         stripped_command: str = instruction['value']
         find_index: int = 0
         find_index = stripped_command.find('--mount=type=cache', find_index)
-        target_dirs = []
+        existing_target_dirs = []
         while find_index != -1:
             target_dir_index = stripped_command.find('target=', find_index)
             if target_dir_index == -1:
-                logging.error('Cannot find the target directory in some existing --mount=type=cache RUN instruction: '
-                              '{0}'.format(instruction['content']))
+                logging.error('Cannot find the target directory in existing --mount=type=cache RUN instruction: '
+                              '"{0}"'.format(instruction['content']))
                 raise handle_error.HandleError()
             # Get target_dir
             space_index = stripped_command.find(' ', target_dir_index)
             if space_index == -1:
                 logging.error('Illegal --mount=type=cache instruction format: '
-                              '{0}'.format(instruction['content']))
+                              '"{0}"'.format(instruction['content']))
                 raise handle_error.HandleError()
             target_dir = stripped_command[target_dir_index + len('target='):space_index]
-            target_dirs.append(target_dir)
+            existing_target_dirs.append(target_dir)
 
             find_index = stripped_command.find('--mount=type=cache', find_index + len('--mount=type=cache'))
 
         # Create new instruction: add --mount=type=cache for those non-mounted directories
-        non_mounted_cache_dirs = [cache_dir for cache_dir in strategy.cache_dirs if cache_dir not in target_dirs]
+        non_mounted_cache_dirs = [cache_dir for cache_dir in strategy.cache_dirs
+                                  if cache_dir not in existing_target_dirs]
         mount_args = ['--mount=type=cache,target={0}'.format(cache_dir) for cache_dir in non_mounted_cache_dirs]
         mount_args_str = ' '.join(mount_args)
 
@@ -109,6 +110,7 @@ class StageOptimizer(object):
     def _optimize_insert_before(self, strategy: InsertBeforeStrategy, last_instruction: dict):
         for command_insert in strategy.commands_insert:
             # Avoid inserting the same instruction
-            if last_instruction is not None and last_instruction['value'] != command_insert:
+            if (last_instruction is None) or \
+                    (last_instruction is not None and last_instruction['value'] != command_insert):
                 self.new_stage_lines.append('RUN ' + command_insert + '\n')
                 stats.insert_before()    # Stats

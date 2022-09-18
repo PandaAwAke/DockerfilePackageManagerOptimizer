@@ -11,6 +11,7 @@ class RunHandler(object):
         self.user_and_userdir = {}
 
     def handle(self, command: str, instruction_index: int):
+        # Pay attention to RUN options, such as RUN --mount, this should be ignored
         commands = self._split_commands(command)
         # Now we got all commands in this RUN instruction!
         need_pm_handler = False
@@ -39,7 +40,15 @@ class RunHandler(object):
         commands = []
         command = []
         brackets_re = re.compile(r'^\(*(.*?)\)*$')
+
+        run_option_mode = True
         for word in words:
+            # Ignore RUN options, such as --mount
+            if run_option_mode and word.startswith('--'):
+                continue
+            else:
+                run_option_mode = False
+
             # Greedy strategy: All commands (whether or not they will be executed at runtime) are considered.
             if word == '&&' or word == ';' or word == '||':  # TODO: Consider > and |
                 # We do not care if some commands are surrounded by brackets
@@ -60,7 +69,7 @@ class RunHandler(object):
         user_name = command[-1]
         for word in command[1:]:
             if word == '-d' or word == '--home-dir':
-                arg_home_dir = True
+                arg_home_dir = True     # Next word is home_dir
             elif arg_home_dir:
                 user_home_dir = word if word.endswith('/') else word + '/'
                 arg_home_dir = False
