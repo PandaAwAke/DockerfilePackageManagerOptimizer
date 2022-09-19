@@ -1,6 +1,11 @@
 .idea/
 test/tmp/
 
+# Dockerfiles for test, and failure results
+test_dockerfiles/
+test_dockerfiles_output/
+DPMO_failures.txt
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

@@ -77,6 +77,9 @@ class PMHandler(object):
     def handle(self, commands: list, instruction_index: int):
         need_optimization_pm_names = []
         for command in commands:
+            if len(command) == 0:
+                logging.error('This dockerfile is too complex, I can\'t handle it now.')
+                raise handle_error.HandleError()
             executable = command[0].s
             for pm_name, pm_setting in pm_settings.items():
                 if executable in pm_setting.executables:

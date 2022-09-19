@@ -20,6 +20,13 @@ class StageSimulator(object):
             value: str = instruction['value']
             # Other types of instructions are ignored
             if i_type == 'USER':
+                user_name = value
+                if self.global_status.user_dirs.get(user_name) is None:
+                    if user_name != 'root':
+                        user_home = '/home/' + user_name + '/'
+                    else:
+                        user_home = '/root/'
+                    self.global_status.user_dirs[user_name] = user_home
                 self.global_status.user = value
             elif i_type == 'WORKDIR':
                 if not value.endswith('/'):

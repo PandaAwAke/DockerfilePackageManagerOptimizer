@@ -26,6 +26,8 @@ Options:
   -s SUFFIX     Set the prefix of the output file, default to ".optimized"
                 If INPUT and OUTPUT both are directories, then SUFFIX will be ignored
   -S            Show the statistics of optimizations.
+  -f FAIL_FILE  Output all dockerfiles that are failed to optimize into FAIL_FILE.
+                FAIL_FILE is './DPMO_failures.txt' by default.
 """
     print(usage)
 
@@ -37,14 +39,21 @@ class Engine(object):
             self.output_file = None
             self.suffix = '.optimized'
             self.show_stats = False
+            self.fail_file = './DPMO_failures.txt'
+            self.fail_fileobj = None
 
     def __init__(self, argv):
         self.setting: Engine.EngineSetting
         self._handle_argv(argv)
+        try:
+            self.setting.fail_fileobj = open(file=self.setting.fail_file, mode='w')
+        except Exception as e:  # Including: IOError
+            logging.error(e)
+            exit(-1)
 
     def _handle_argv(self, argv):
         try:
-            opts, args = getopt.getopt(argv, 'ho:s:S')
+            opts, args = getopt.getopt(argv, 'ho:s:Sf:')
         except getopt.GetoptError as e:
             logging.error('Invalid option: "{0}"'.format(e.opt))
             exit(-1)
@@ -64,6 +73,8 @@ class Engine(object):
                 self.setting.suffix = value
             elif option == '-S':
                 self.setting.show_stats = True
+            elif option == '-f':
+                self.setting.fail_file = value
 
     def run(self):
         if os.path.isdir(self.setting.input_file):
@@ -108,6 +119,8 @@ class Engine(object):
                 logging.error('"{0}" uses a non-official frontend, I cannot handle this.'.format(input_file))
                 return
 
+            logging.info('Optimizing {0} ...'.format(input_file))
+
             new_stages_lines = []
             for stage in stages:    # stage is (instructions, contexts)
                 _simulator = StageSimulator(stage)
@@ -120,11 +133,13 @@ class Engine(object):
 
             writer = DockerfileWriter(dockerfile_out)
             writer.write(new_stages_lines)
+
         except handle_error.HandleError as e:   # Failed to optimize this dockerfile
             f_in.close()
             f_out.close()
             logging.info(
                 'Failed to optimize {0}.'.format(input_file, output_file))
+            self.setting.fail_fileobj.write(input_file + '\n')
             stats.clear()
             return
 
