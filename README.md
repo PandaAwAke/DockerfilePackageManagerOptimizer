@@ -4,7 +4,7 @@ A tool for dockerfile package manager optimization.
 ## Usage
 ```shell
 Usage: python src/main.py [OPTIONS] INPUT
-If INPUT is a directory, all files (including subdirectory) in it will be optimized.
+If INPUT is a directory, all files (including subdirectories) in it will be optimized.
 
 Options:
   -h            display this help message and exit
@@ -36,6 +36,7 @@ python src/main.py -o ./new_dockerfiles ./dockerfiles/	# ./new_dockerfiles/ has 
 
 ## Things to do next:
 
-* Handle RUN exec-form
 * Parse shell scripts
 * More support for cache directory modification
+* Support remove command (such as rm -r /var/lib/apt)
+* Support for ENV substitution

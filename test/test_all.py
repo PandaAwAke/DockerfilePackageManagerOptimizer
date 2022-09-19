@@ -43,6 +43,33 @@ class TestAll(unittest.TestCase):
             'RUN --mount=type=cache,target=/var/cache/apt --mount=type=cache,target=/var/lib/apt apt-get install\n'
         ])
 
+    def test_run_exec_form(self):
+        lines = [
+            'RUN --mount=type=cache,target=/var/lib/apt [ "apt-get", "update" ]',
+            'RUN --mount=type=cache,target=/var/lib/apt go install && apt-get install'
+        ]
+        result = self._execute_one_stage(lines)
+        print(result)
+        self.assertEqual(result,
+        [
+         'RUN rm -f /etc/apt/apt.conf.d/docker-clean; echo \'Binary::apt::APT::Keep-Downloaded-Packages "true";\' > /etc/apt/apt.conf.d/keep-cache\n',
+         'RUN --mount=type=cache,target=/var/cache/apt --mount=type=cache,target=/var/lib/apt [ "apt-get", "update" ]\n',
+         'RUN --mount=type=cache,target=/root/.cache/go-build --mount=type=cache,target=/var/cache/apt --mount=type=cache,target=/var/lib/apt go install && apt-get install\n'
+        ])
+
+    def test_bash_exec_form(self):
+        lines = [
+            'RUN --mount=type=cache,target=/var/lib/apt [ "bash", "-c", "apt-get update" ]',
+            'RUN --mount=type=cache,target=/var/lib/apt go install && apt-get install'
+        ]
+        result = self._execute_one_stage(lines)
+        print(result)
+        self.assertEqual(result,
+        [
+         'RUN rm -f /etc/apt/apt.conf.d/docker-clean; echo \'Binary::apt::APT::Keep-Downloaded-Packages "true";\' > /etc/apt/apt.conf.d/keep-cache\n',
+         'RUN --mount=type=cache,target=/var/cache/apt --mount=type=cache,target=/var/lib/apt [ "bash", "-c", "apt-get update" ]\n',
+         'RUN --mount=type=cache,target=/root/.cache/go-build --mount=type=cache,target=/var/cache/apt --mount=type=cache,target=/var/lib/apt go install && apt-get install\n'
+        ])
 
 
 if __name__ == '__main__':

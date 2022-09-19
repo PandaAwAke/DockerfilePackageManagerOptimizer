@@ -75,9 +75,9 @@ class PMHandler(object):
         return False
 
     def handle(self, commands: list, instruction_index: int):
-        need_to_optimize = False
+        need_optimization_pm_names = []
         for command in commands:
-            executable = command[0]
+            executable = command[0].s
             for pm_name, pm_setting in pm_settings.items():
                 if executable in pm_setting.executables:
                     break
@@ -89,7 +89,7 @@ class PMHandler(object):
                                 for cache_dir in pm_settings[pm_name].default_cache_dirs]
                 )
             pm_status: PMStatus = self.pm_statuses[pm_name]
-            command_str = ' '.join(command[1:])
+            command_str = ' '.join([word.s for word in command[1:]])
 
             # Case for modifying the cache dir
             for command_regex_modify_cache_dir in pm_settings[pm_name].commands_regex_modify_cache_dir:
@@ -112,26 +112,36 @@ class PMHandler(object):
                 match_result = run_re.match(command_str)
                 # Only considering one match
                 if match_result:
-                    need_to_optimize = True
+                    need_optimization_pm_names.append(pm_name)
 
         # ** Note: Don't generate duplicated strategies for a single instruction including multiple commands!
+        insert_before_strategy = None
+        add_cache_strategy = None
 
-        if need_to_optimize:
+        for pm_name in need_optimization_pm_names:
             # Generate optimization strategies Try to generate InsertBeforeStrategy
             # Note: additional_pre_commands are only added once in a stage!
             #   This means that multiple apt-get instructions will result in only once command addition
             if len(pm_settings[pm_name].additional_pre_commands) > 0 and \
                     not self.pm_statuses[pm_name].pre_commands_added:
-                self.optimization_strategies.append(InsertBeforeStrategy(
-                    instruction_index=instruction_index,
-                    commands_insert=pm_settings[pm_name].additional_pre_commands
-                ))
+                if insert_before_strategy is None:
+                    insert_before_strategy = InsertBeforeStrategy(instruction_index, [])
+                for additional_pre_command in pm_settings[pm_name].additional_pre_commands:
+                    if additional_pre_command not in insert_before_strategy.commands_insert:
+                        insert_before_strategy.commands_insert.append(additional_pre_command)
                 self.pm_statuses[pm_name].pre_commands_added = True
+
             # Generate AddCacheStrategy
-            self.optimization_strategies.append(AddCacheStrategy(
-                instruction_index=instruction_index,
-                cache_dirs=self.pm_statuses[pm_name].cache_dirs
-            ))
+            if add_cache_strategy is None:
+                add_cache_strategy = AddCacheStrategy(instruction_index, [])
+            for cache_dir in self.pm_statuses[pm_name].cache_dirs:
+                if cache_dir not in add_cache_strategy.cache_dirs:
+                    add_cache_strategy.cache_dirs.append(cache_dir)
+
+        if insert_before_strategy is not None:
+            self.optimization_strategies.append(insert_before_strategy)
+        if add_cache_strategy is not None:
+            self.optimization_strategies.append(add_cache_strategy)
 
     def _replace_home_char(self, path: str) -> str:
         """

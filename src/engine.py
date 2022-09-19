@@ -19,7 +19,7 @@ from dockerfile_parse import DockerfileParser
 def _print_usage():
     usage = \
         """Usage: python src/main.py [OPTIONS] INPUT
-If INPUT is a directory, all files (including subdirectory) in it will be optimized.
+If INPUT is a directory, all files (including subdirectories) in it will be optimized.
 
 Options:
   -h            display this help message and exit

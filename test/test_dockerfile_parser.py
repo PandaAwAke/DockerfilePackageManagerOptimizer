@@ -53,6 +53,13 @@ class TestDockerfileParser(unittest.TestCase):
         s = self._get_lines_structure(lines)
         pass
 
+    def test_run_exec_form(self):
+        lines = [
+            'RUN --mount=type=cache [ "/bin/bash", "-c", "echo hello" ]'
+        ]
+        s = self._get_lines_structure(lines)
+        pass
+
 
 if __name__ == '__main__':
     unittest.main()
