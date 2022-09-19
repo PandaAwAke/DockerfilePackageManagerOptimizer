@@ -122,17 +122,25 @@ class Engine(object):
             logging.info('Optimizing {0} ...'.format(input_file))
 
             new_stages_lines = []
+            total_strategies = 0
             for stage in stages:    # stage is (instructions, contexts)
                 _simulator = StageSimulator(stage)
                 _simulator.simulate()
                 _optimizer = StageOptimizer(stage)
-                new_stage_lines = _optimizer.optimize(_simulator.get_optimization_strategies())
+                strategies = _simulator.get_optimization_strategies()
+                total_strategies += len(strategies)
+                new_stage_lines = _optimizer.optimize(strategies)
                 new_stages_lines.append(new_stage_lines)
 
-            global_optimizer.optimize(stages, new_stages_lines)
-
-            writer = DockerfileWriter(dockerfile_out)
-            writer.write(new_stages_lines)
+            if total_strategies > 0:
+                global_optimizer.optimize(stages, new_stages_lines)
+                writer = DockerfileWriter(dockerfile_out)
+                writer.write(new_stages_lines)
+                logging.info('Successfully optimized {0} to {1}.'.format(input_file, output_file))
+            else:
+                # just copy output from input
+                f_out.write(f_in.read())
+                logging.info('{0} has nothing to optimize.'.format(input_file))
 
         except handle_error.HandleError as e:   # Failed to optimize this dockerfile
             f_in.close()
@@ -145,7 +153,7 @@ class Engine(object):
 
         f_in.close()
         f_out.close()
-        logging.info('Successfully optimized {0} to {1}.'.format(input_file, output_file))
+        
         if self.setting.show_stats:
             logging.info(stats)
 
