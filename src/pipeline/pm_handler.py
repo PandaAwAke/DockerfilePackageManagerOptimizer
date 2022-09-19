@@ -1,7 +1,7 @@
 import logging
+import re
 
 import yaml
-import re
 
 from model import handle_error
 from model.global_status import GlobalStatus

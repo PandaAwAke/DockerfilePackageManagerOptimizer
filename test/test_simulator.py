@@ -1,11 +1,9 @@
-import logging
 import unittest
 
 from dockerfile_parse import DockerfileParser
 
-from model import handle_error
 from model.global_status import GlobalStatus
-from pipeline import simulator
+from pipeline import stage_simulator
 
 
 class TestSimulator(unittest.TestCase):
@@ -27,7 +25,7 @@ class TestSimulator(unittest.TestCase):
             'WORKDIR panda',
             'USER panda'
         ]
-        s = simulator.Simulator(self._lines_wrapper(lines))
+        s = stage_simulator.StageSimulator(self._lines_wrapper(lines))
         s.simulate(0, 1)
         self.assertEqual(s.global_status, GlobalStatus(
             work_dir='/', user='root', user_dirs={'panda': '/home/panda/', 'root': '/home/root/'}

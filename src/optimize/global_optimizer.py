@@ -17,8 +17,9 @@ class GlobalOptimizer:
         :return: if this dockerfile can be optimized
         """
         assert len(stages) > 0
-        assert len(stages[0]) > 0
-        for instruction in stages[0]:
+        assert len(stages[0][0]) > 0
+        # stages is a list of (instructions, contexts)
+        for instruction in stages[0][0]:
             if instruction['instruction'] != 'COMMENT':
                 break
             else:
@@ -35,9 +36,9 @@ class GlobalOptimizer:
     def optimize(self, stages: list, new_stages_lines: list):
         # Try to add "# syntax = docker/dockerfile:1.3"
         assert len(stages) > 0
-        assert len(stages[0]) > 0
+        assert len(stages[0][0]) > 0
         assert len(new_stages_lines) > 0
-        assert len(new_stages_lines[0]) > 0
+        assert len(new_stages_lines[0][0]) > 0
 
         need_to_add_syntax = True
         need_to_update_syntax = False
@@ -50,7 +51,7 @@ class GlobalOptimizer:
         """
         # Get information for #syntax, to determine whether we need to add/update syntax
         syntax_line_index = 0
-        for instruction in stages[0]:
+        for instruction in stages[0][0]:
             if instruction['instruction'] != 'COMMENT':
                 break
             else:

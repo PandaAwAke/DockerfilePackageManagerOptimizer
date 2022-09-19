@@ -1,4 +1,3 @@
-import logging
 import unittest
 
 from dockerfile_parse import DockerfileParser

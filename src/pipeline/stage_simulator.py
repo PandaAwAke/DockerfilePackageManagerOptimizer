@@ -2,9 +2,10 @@ from model.global_status import GlobalStatus
 from pipeline.run_handler import RunHandler
 
 
-class Simulator(object):
-    def __init__(self, instructions):
-        self.instructions = instructions
+class StageSimulator(object):
+    def __init__(self, stage):
+        # stage is (instructions, contexts)
+        self.instructions, self.contexts = stage
         self.global_status = GlobalStatus()
         self.run_handler = RunHandler(self.global_status)
 
@@ -14,6 +15,7 @@ class Simulator(object):
         assert 0 <= start_instruction_index <= end_instruction_index
         for instruction_index in range(start_instruction_index, end_instruction_index):
             instruction = self.instructions[instruction_index]
+            context = self.contexts[instruction_index]
             i_type: str = instruction['instruction']
             value: str = instruction['value']
             # Other types of instructions are ignored
@@ -27,7 +29,7 @@ class Simulator(object):
                 else:                       # Relative dir
                     self.global_status.work_dir += value
             elif i_type == 'RUN':
-                self.run_handler.handle(value, instruction_index)
+                self.run_handler.handle(value, context, instruction_index)
             # TODO: Consider more instructions
             # elif i_type == "VOLUME":
             #     ...

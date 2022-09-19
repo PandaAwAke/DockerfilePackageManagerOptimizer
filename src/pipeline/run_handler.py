@@ -1,9 +1,10 @@
 import logging
 import re
 
-from model.global_status import GlobalStatus
+import utils
 from model import handle_error
 from model.command_word import CommandWord
+from model.global_status import GlobalStatus
 from pipeline.pm_handler import PMHandler
 
 
@@ -13,13 +14,13 @@ class RunHandler(object):
         self.pm_handler = PMHandler(global_status=global_status)
         self.user_and_userdir = {}
 
-    def handle(self, command_str: str, instruction_index: int):
+    def handle(self, command_str: str, context, instruction_index: int):
         # Pay attention to RUN options, such as RUN --mount, this should be ignored
         command_str = self._remove_run_options(command_str)
         commands = self._process_exec_form(command_str)
         if commands is None:
-            commands = self._process_shell_form(command_str)
-        commands = self._handle_bash_c(commands)
+            commands = self._process_shell_form(command_str, context)
+        commands = self._handle_bash_c(commands, context)
         # Now we got all commands in this RUN instruction!
         need_pm_handler = False
         for command_words in commands:
@@ -41,6 +42,9 @@ class RunHandler(object):
             self.pm_handler.handle(commands=commands, instruction_index=instruction_index)
 
     # --------------------- PreProcessing ---------------------
+    @staticmethod
+    def _remove_brackets(s: str) -> str:
+        return s.replace('(', '').replace(')', '')
 
     @staticmethod
     def _remove_run_options(command_str: str) -> str:
@@ -52,6 +56,11 @@ class RunHandler(object):
 
     @staticmethod
     def _process_exec_form(command_str: str):
+        """
+        ENV variables won't be substituted here.
+        :param command_str:
+        :return:
+        """
         # Handling exec-form
         exec_form_re = re.compile(r'^\s*(\[[\s\S]*])\s*$')
         match_result = exec_form_re.match(command_str)
@@ -66,13 +75,13 @@ class RunHandler(object):
         else:
             return None
 
-    @staticmethod
-    def _process_shell_form(command_str: str) -> list:
+    def _process_shell_form(self, command_str: str, context) -> list:
         """
         Preprocess the command_str behind RUN (shell-form).
         all commands inside command_str (connected with &&, ||, etc) will be returned.
         Note: escape character will not be translated inside double quotes, but \" inside
               double quotes can be recognized.
+              ENV variables are substituted too (including string inside double quotes).
 
         Examples:
         ->  apt-get install python3-pip && echo "hello, world!"
@@ -90,20 +99,26 @@ class RunHandler(object):
         """
         # Handling shell-form
         command_str_split_words = []
-        # Pay attention to quotes and brackets!
-        # - Find quotes
+
+        # - Handling quotes and brackets
         i = 0
-        s = ''
+        content_outside_quote = ''
         while i < len(command_str):
             if command_str[i] == "'":
                 matched_quote = command_str.find("'", i + 1)    # Find matched quote
                 if matched_quote == -1:
                     logging.error('Illegal RUN command: "{0}"'.format(command_str))
                     raise handle_error.HandleError()
-                content_inside_quote = command_str[i + 1: matched_quote]
+
                 # Remove brackets directly, because we don't care about the order of evaluation
-                command_str_split_words.extend([CommandWord(word) for word in s.replace('(', '').replace(')', '').split()])
-                s = ''
+                content_outside_quote = self._remove_brackets(content_outside_quote)
+                content_outside_quote = utils.substitute_env(content_outside_quote, context)
+                command_str_split_words.extend([
+                    CommandWord(word) for word in content_outside_quote.split()
+                ])
+                content_outside_quote = ''
+
+                content_inside_quote = command_str[i + 1: matched_quote]
                 command_str_split_words.append(CommandWord(content_inside_quote, CommandWord.SINGLE_QUOTED))
                 i = matched_quote
             elif command_str[i] == '"':
@@ -118,16 +133,26 @@ class RunHandler(object):
                     else:
                         j = matched_quote + 1
 
+                content_outside_quote = self._remove_brackets(content_outside_quote)
+                content_outside_quote = utils.substitute_env(content_outside_quote, context)
+                command_str_split_words.extend([
+                    CommandWord(word) for word in content_outside_quote.split()
+                ])
+                content_outside_quote = ''
+
                 content_inside_quote = command_str[i + 1: matched_quote]
-                command_str_split_words.extend([CommandWord(word) for word in s.replace('(', '').replace(')', '').split()])
-                s = ''
+                content_inside_quote = utils.substitute_env(content_inside_quote, context)
                 command_str_split_words.append(CommandWord(content_inside_quote, CommandWord.DOUBLE_QUOTED))
                 i = matched_quote
             else:
-                s += command_str[i]
+                content_outside_quote += command_str[i]
             i += 1
-        if len(s) > 0:
-            command_str_split_words.extend([CommandWord(word) for word in s.replace('(', '').replace(')', '').split()])
+        if len(content_outside_quote) > 0:
+            content_outside_quote = self._remove_brackets(content_outside_quote)
+            content_outside_quote = utils.substitute_env(content_outside_quote, context)
+            command_str_split_words.extend([
+                CommandWord(word) for word in content_outside_quote.split()
+            ])
 
         # - Separate multiple commands in command_str, for example 'a && b || c'
         commands = []
@@ -145,7 +170,7 @@ class RunHandler(object):
             commands.append(command_words)
         return commands
 
-    def _handle_bash_c(self, commands: list) -> list:
+    def _handle_bash_c(self, commands: list, context) -> list:
         # Handle "/bin/bash -c command"
         new_commands = []
         for command_words in commands:
@@ -153,12 +178,11 @@ class RunHandler(object):
                 new_commands.append(command_words)
                 continue
             # The executable is sh/bash, let's translate -c
-            # TODO: Translate ENV
             for i in range(1, len(command_words)):
                 command_word = command_words[i]
                 if command_word.s == '-c' and i < len(command_words) - 1:
                     real_command_str = command_words[i + 1].s
-                    real_command_words = self._process_shell_form(real_command_str)
+                    real_command_words = self._process_shell_form(real_command_str, context)
                     new_commands.extend(real_command_words)
                     break
         return new_commands

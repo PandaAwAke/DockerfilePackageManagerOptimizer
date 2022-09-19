@@ -14,16 +14,25 @@ class StageSplitter(object):
 
     def get_stages(self):
         if not self.dockerfile.is_multistage:
-            return [self.dockerfile.structure]
+            return [(self.dockerfile.structure, self.dockerfile.context_structure)]
         else:
             instructions = []
+            contexts = []
             stages = []
-            for instruction in self.dockerfile.structure:
+            first_FROM = True
+            for i in range(len(self.dockerfile.structure)):
+                instruction = self.dockerfile.structure[i]
+                context = self.dockerfile.context_structure[i]
                 if instruction['instruction'] == 'FROM':
-                    stages.append(instructions)
-                    instructions = []
+                    if first_FROM:
+                        first_FROM = False
+                    else:
+                        stages.append((instructions, contexts))
+                        instructions = []
+                        contexts = []
                 instructions.append(instruction)
+                contexts.append(context)
             if len(instructions) > 0:
-                stages.append(instructions)
+                stages.append((instructions, contexts))
             return stages
 

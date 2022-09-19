@@ -45,8 +45,12 @@ class TestDockerfileParser(unittest.TestCase):
 
     def test_arg_env(self):
         lines = [
-            'env HOME=/root',
-            'ENV HOME1=$HOME/foo',
+            'ARG arg1=bar',
+            'env HOME=/root/$arg1',
+            'ARG arg2',
+            'ENV version=${arg2:-v1.0.0}',
+            'ENV HOME1=/${arg1}/foo',
+            'ENV HOME2=$HOME1/foo',
             'RUN [ "echo", "$HOME" ]',
             'RUN echo $HOME'
         ]

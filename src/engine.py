@@ -1,19 +1,16 @@
-import logging
 import getopt
+import logging
 import os
 
-from model import handle_error
-
-from pipeline.stage_splitter import StageSplitter
-from pipeline.simulator import Simulator
-from pipeline.dockerfile_writer import DockerfileWriter
-
-from optimize.stage_optimizer import StageOptimizer
-from optimize.global_optimizer import GlobalOptimizer
-
-from model.stats import stats
-
 from dockerfile_parse import DockerfileParser
+
+from model import handle_error
+from model.stats import stats
+from optimize.global_optimizer import GlobalOptimizer
+from optimize.stage_optimizer import StageOptimizer
+from pipeline.dockerfile_writer import DockerfileWriter
+from pipeline.stage_simulator import StageSimulator
+from pipeline.stage_splitter import StageSplitter
 
 
 def _print_usage():
@@ -22,12 +19,13 @@ def _print_usage():
 If INPUT is a directory, all files (including subdirectories) in it will be optimized.
 
 Options:
-  -h            display this help message and exit
-  -o OUTPUT     optimized output dockerfile path, default to INPUT + SUFFIX
+  -h            Display this help message and exit
+  -o OUTPUT     Optimized output dockerfile path, default to INPUT + SUFFIX
                 (SUFFIX is ".optimized" by default, so this will be "INPUT.optimized" by default)
                 If INPUT is a directory, then OUTPUT should be a directory too
-  -s SUFFIX     set the prefix of the output file, default to ".optimized"
-                If INPUT and OUTPUT both are directories, then SUFFIX will be ignored 
+  -s SUFFIX     Set the prefix of the output file, default to ".optimized"
+                If INPUT and OUTPUT both are directories, then SUFFIX will be ignored
+  -S            Show the statistics of optimizations.
 """
     print(usage)
 
@@ -38,6 +36,7 @@ class Engine(object):
             self.input_file = input_file
             self.output_file = None
             self.suffix = '.optimized'
+            self.show_stats = False
 
     def __init__(self, argv):
         self.setting: Engine.EngineSetting
@@ -45,7 +44,7 @@ class Engine(object):
 
     def _handle_argv(self, argv):
         try:
-            opts, args = getopt.getopt(argv, 'ho:s:')
+            opts, args = getopt.getopt(argv, 'ho:s:S')
         except getopt.GetoptError as e:
             logging.error('Invalid option: "{0}"'.format(e.opt))
             exit(-1)
@@ -63,6 +62,8 @@ class Engine(object):
                 self.setting.output_file = value
             elif option == '-s':
                 self.setting.suffix = value
+            elif option == '-S':
+                self.setting.show_stats = True
 
     def run(self):
         if os.path.isdir(self.setting.input_file):
@@ -93,12 +94,12 @@ class Engine(object):
 
         try:
             splitter = StageSplitter(dockerfile=dockerfile_in)
-            stages = splitter.get_stages()
+            stages = splitter.get_stages()  # list of (instructions, contexts)
             if len(stages) == 0:
                 logging.error('No stage is found in "{0}"! Is it correct?'.format(input_file))
                 return
 
-            if len(stages[0]) == 0:
+            if len(stages[0][0]) == 0:
                 logging.info('Encountered an empty file: {0}'.format(input_file))
                 return
 
@@ -108,8 +109,8 @@ class Engine(object):
                 return
 
             new_stages_lines = []
-            for stage in stages:
-                _simulator = Simulator(stage)
+            for stage in stages:    # stage is (instructions, contexts)
+                _simulator = StageSimulator(stage)
                 _simulator.simulate()
                 _optimizer = StageOptimizer(stage)
                 new_stage_lines = _optimizer.optimize(_simulator.get_optimization_strategies())
@@ -123,14 +124,15 @@ class Engine(object):
             f_in.close()
             f_out.close()
             logging.info(
-                'Failed to optimize {0} to {1}.'.format(self.setting.input_file, self.setting.output_file))
+                'Failed to optimize {0}.'.format(input_file, output_file))
             stats.clear()
             return
 
         f_in.close()
         f_out.close()
-        logging.info('Successfully optimized {0} to {1}.'.format(self.setting.input_file, self.setting.output_file))
-        logging.info(stats)
+        logging.info('Successfully optimized {0} to {1}.'.format(input_file, output_file))
+        if self.setting.show_stats:
+            logging.info(stats)
 
     def _optimize_directory(self):
         input_dir = self.setting.input_file
@@ -151,3 +153,5 @@ class Engine(object):
                                                   os.path.relpath(input_sub_dir, input_dir))
                     if not os.path.exists(output_sub_dir):
                         os.mkdir(output_sub_dir)
+        if self.setting.show_stats:
+            logging.info(stats.totalStr())

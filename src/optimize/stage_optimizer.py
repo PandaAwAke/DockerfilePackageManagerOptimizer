@@ -1,17 +1,17 @@
 import logging
 import re
 
+import utils
 from model import handle_error
-from optimize.optimization_strategy import *
-
 from model.stats import stats
+from optimize.optimization_strategy import *
 
 
 class StageOptimizer(object):
 
-    def __init__(self, instructions):
+    def __init__(self, stage):
         self.new_stage_lines = []
-        self.instructions = instructions
+        self.instructions, self.contexts = stage
 
     def optimize(self, optimization_strategies: list) -> list:
         if len(optimization_strategies) == 0:
@@ -37,7 +37,9 @@ class StageOptimizer(object):
         ]
         """
         last_instruction = None
-        for instruction in self.instructions:
+        for i in range(len(self.instructions)):
+            instruction = self.instructions[i]
+            context = self.contexts[i]
             # Save the original dockerfile layout as much as possible
             if last_instruction is not None and last_instruction['endline'] != -1:
                 empty_lines = instruction['startline'] - last_instruction['endline'] - 1
@@ -50,7 +52,7 @@ class StageOptimizer(object):
                 need_to_copy = True
                 for strategy in matched_strategies:
                     if isinstance(strategy, AddCacheStrategy):  # At most 1 AddCacheStrategy one instruction
-                        self._optimize_add_cache(strategy=strategy, instruction=instruction)
+                        self._optimize_add_cache(strategy=strategy, instruction=instruction, context=context)
                         need_to_copy = False
                     elif isinstance(strategy, InsertBeforeStrategy):
                         self._optimize_insert_before(strategy=strategy, last_instruction=last_instruction)
@@ -62,7 +64,7 @@ class StageOptimizer(object):
             last_instruction = instruction
         return self.new_stage_lines
 
-    def _optimize_add_cache(self, strategy: AddCacheStrategy, instruction: dict):
+    def _optimize_add_cache(self, strategy: AddCacheStrategy, instruction: dict, context):
         if instruction['instruction'] != 'RUN':
             logging.error('Tried to optimize a non-RUN instruction: "{0}"'.format(instruction['content']))
             raise handle_error.HandleError()
@@ -86,6 +88,7 @@ class StageOptimizer(object):
                               '"{0}"'.format(instruction['content']))
                 raise handle_error.HandleError()
             target_dir = stripped_command[target_dir_index + len('target='):space_index]
+            target_dir = utils.substitute_env(target_dir, context)
             existing_target_dirs.append(target_dir)
 
             find_index = stripped_command.find('--mount=type=cache', find_index + len('--mount=type=cache'))
@@ -114,3 +117,4 @@ class StageOptimizer(object):
                     (last_instruction is not None and last_instruction['value'] != command_insert):
                 self.new_stage_lines.append('RUN ' + command_insert + '\n')
                 stats.insert_before()    # Stats
+

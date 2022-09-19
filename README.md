@@ -39,4 +39,4 @@ python src/main.py -o ./new_dockerfiles ./dockerfiles/	# ./new_dockerfiles/ has 
 * Parse shell scripts
 * More support for cache directory modification
 * Support remove command (such as rm -r /var/lib/apt)
-* Support for ENV substitution
+* Support subdirectory detection
