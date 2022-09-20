@@ -143,10 +143,12 @@ class Engine(object):
                 logging.info('{0} has nothing to optimize.'.format(input_file))
 
         except handle_error.HandleError as e:   # Failed to optimize this dockerfile
+            # just copy output from input
+            f_out.write(f_in.read())
             f_in.close()
             f_out.close()
             logging.info(
-                'Failed to optimize {0}.'.format(input_file, output_file))
+                'Failed to optimize {0}. The input file is copied.'.format(input_file, output_file))
             self.setting.fail_fileobj.write(input_file + '\n')
             stats.clear()
             return
