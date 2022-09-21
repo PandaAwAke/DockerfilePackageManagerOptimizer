@@ -3,7 +3,7 @@ import unittest
 from dockerfile_parse import DockerfileParser
 
 from model import handle_error
-from optimize.stage_optimizer import StageOptimizer
+from pipeline.optimize.stage_optimizer import StageOptimizer
 from pipeline.stage_simulator import StageSimulator
 
 

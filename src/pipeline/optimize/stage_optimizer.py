@@ -1,41 +1,54 @@
+"""
+Copyright 2022 PandaAwAke
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
+
+
 import logging
 import re
 
 import utils
 from model import handle_error
 from model.stats import stats
-from optimize.optimization_strategy import *
+from pipeline.optimize.optimization_strategy import *
 
 
 class StageOptimizer(object):
+    """
+    Try to apply all optimization strategies from PMHandler to the stage.
+    """
 
     def __init__(self, stage):
+        """
+        Initialize the optimizer.
+        :param stage: the stage to optimize.
+        """
         self.new_stage_lines = []
         self.instructions, self.contexts = stage
 
     def optimize(self, optimization_strategies: list) -> list:
+        """
+        Optimize the stage using optimization_strategies.
+        :param optimization_strategies: a list of OptimizationStrategies from PMHandler.
+        :return: a list of string lines describing the optimized stage.
+        """
         if len(optimization_strategies) == 0:
             return [instruction['content'] for instruction in self.instructions]
 
         self.new_stage_lines = []
         optimization_indices = [strategy.instruction_index for strategy in optimization_strategies]
         instruction_index = 0
-        """
-        Instructions are like:
-        [
-            {"instruction": "FROM",       # always upper-case
-             "startline": 0,              # 0-based
-             "endline": 0,                # 0-based
-             "content": "From fedora\n",
-             "value": "fedora"},
-
-            {"instruction": "CMD",
-             "startline": 1,
-             "endline": 2,
-             "content": "CMD yum -y update && \\\n    yum clean all\n",
-             "value": "yum -y update && yum clean all"}
-        ]
-        """
         last_instruction = None
         for i in range(len(self.instructions)):
             instruction = self.instructions[i]
@@ -65,6 +78,13 @@ class StageOptimizer(object):
         return self.new_stage_lines
 
     def _optimize_add_cache(self, strategy: AddCacheStrategy, instruction: dict, context):
+        """
+        Apply the AddCacheStrategy for the instruction.
+        :param strategy: the AddCacheStrategy.
+        :param instruction: the instruction to optimize.
+        :param context: the context of the instruction.
+        :return: None
+        """
         if instruction['instruction'] != 'RUN':
             logging.error('Tried to optimize a non-RUN instruction: "{0}"'.format(instruction['content']))
             raise handle_error.HandleError()
@@ -111,6 +131,13 @@ class StageOptimizer(object):
         stats.add_cache()        # Stats
 
     def _optimize_insert_before(self, strategy: InsertBeforeStrategy, last_instruction: dict):
+        """
+        Apply the InsertBeforeStrategy for the instruction.
+        :param strategy: the InsertBeforeStrategy.
+        :param last_instruction: the instruction before the insertion point. This is to avoid inserting
+                duplicated commands. When try to optimize an optimized Dockerfile, this will be helpful.
+        :return: None
+        """
         for command_insert in strategy.commands_insert:
             # Avoid inserting the same instruction
             if (last_instruction is None) or \

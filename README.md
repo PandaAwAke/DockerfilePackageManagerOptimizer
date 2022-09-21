@@ -7,12 +7,15 @@ Usage: python src/main.py [OPTIONS] INPUT
 If INPUT is a directory, all files (including subdirectories) in it will be optimized.
 
 Options:
-  -h            display this help message and exit
-  -o OUTPUT     optimized output dockerfile path, default to INPUT + SUFFIX
+  -h            Display this help message and exit
+  -o OUTPUT     Optimized output dockerfile path, default to INPUT + SUFFIX
                 (SUFFIX is ".optimized" by default, so this will be "INPUT.optimized" by default)
                 If INPUT is a directory, then OUTPUT should be a directory too
-  -s SUFFIX     set the prefix of the output file, default to ".optimized"
-                If INPUT and OUTPUT both are directories, then SUFFIX will be ignored 
+  -s SUFFIX     Set the prefix of the output file, default to ".optimized"
+                If INPUT and OUTPUT both are directories, then SUFFIX will be ignored
+  -S            Show the statistics of optimizations
+  -f FAIL_FILE  Output all dockerfiles that are failed to optimize into FAIL_FILE
+                FAIL_FILE is './DPMO_failures.txt' by default
 ```
 
 ### Examples:
@@ -36,6 +39,7 @@ python src/main.py -o ./new_dockerfiles ./dockerfiles/	# ./new_dockerfiles/ has 
 
 ## Things to do next:
 
+* Find a better place to insert the additional commands
 * Parse shell scripts
 * More support for cache directory modification
 * Support removing cache-disable commands (such as rm -r /var/lib/apt)

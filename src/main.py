@@ -9,14 +9,9 @@
 
 """
 import sys
-import logging
 
 from engine import Engine
 
 if __name__ == '__main__':
-    logging.basicConfig(
-        format='[%(asctime)s %(levelname)s %(name)s]: %(message)s',
-        level=logging.INFO
-    )
     engine = Engine(sys.argv[1:])
     engine.run()

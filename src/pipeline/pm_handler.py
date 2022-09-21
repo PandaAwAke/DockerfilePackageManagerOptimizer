@@ -5,15 +5,29 @@ import yaml
 
 from model import handle_error
 from model.global_status import GlobalStatus
-from optimize.optimization_strategy import *
+from pipeline.optimize.optimization_strategy import *
 
 
 class PMSetting(object):
+    """
+    The settings for a package manager, read from "PMSettings.yaml".
+    """
+
     def __init__(self, executables: list = None,
                  commands_regex_run: list = None,
                  default_cache_dirs: list = None,
                  commands_regex_modify_cache_dir: list = None,
                  additional_pre_commands: list = None):
+        """
+        Initialize the PM's settings.
+        :param executables: the executables of this PM, for example: [apt, apt-get, ...] for apt.
+        :param commands_regex_run: the regular expressions for running the PM download/install/compile commands.
+        :param default_cache_dirs: the default download cache directories for this PM
+                ("~" inside the filepath is also supported and recommended).
+        :param commands_regex_modify_cache_dir: (Nullable) the regular expressions for modifying the
+                PM cache directories commands. Group 1 of the regex is the new filepath.
+        :param additional_pre_commands: (Nullable) the commands need to be added before all this PM related commands.
+        """
         self.executables = executables
         self.commands_regex_run = commands_regex_run
         self.default_cache_dirs = default_cache_dirs
@@ -21,16 +35,14 @@ class PMSetting(object):
         self.additional_pre_commands = additional_pre_commands
 
 
-class PMStatus(object):
-    def __init__(self, cache_dirs=None):
-        self.cache_dirs = cache_dirs
-        self.pre_commands_added = False
-
-
-pm_settings = {}
+pm_settings = {}    # All PM's settings. Key: PM's name; Value: a PMSetting object.
 
 
 def load_pm_settings():
+    """
+    Load all PM settings from "PMSettings.yaml" into pm_settings.
+    :return:
+    """
     if len(pm_settings) > 0:
         return
     try:
@@ -60,38 +72,81 @@ def load_pm_settings():
 
 
 class PMHandler(object):
+    """
+    Maintain a PMStatus for every PM and try to generate OptimizationStrategies
+        (pipeline.optimize.optimization_strategy).
+    -   Take pm-related commands from RunHandler and try to handle them.
+    -   When this instruction can be optimized, try to generate optimization strategies.
+    """
+
+    class PMStatus(object):
+        """
+        The status for a PM. Created when this PM is firstly encountered.
+        """
+        def __init__(self, cache_dirs=None):
+            self.cache_dirs = cache_dirs
+            self.pre_commands_added = False
 
     def __init__(self, global_status: GlobalStatus):
+        """
+        Initialize the PMHandler.
+        :param global_status: the global_status of this stage created by stage simulator.
+        """
         self.global_status = global_status
-        self.pm_statuses = {}
+        self.pm_statuses = {}   # Key: PM's name; Value: PMStatus object
         self.optimization_strategies = []
         load_pm_settings()
 
     @staticmethod
     def is_package_manager_executable(executable: str) -> bool:
+        """
+        This function is used by RunHandler to determine if the executable is a PM executable.
+        :param executable: the executable of a command.
+        :return: True when executable is a PM executable, or else False.
+        """
         for pm_name, pm_setting in pm_settings.items():
             if executable in pm_setting.executables:
                 return True
         return False
 
+    @staticmethod
+    def _get_executable_package_manager(executable: str):
+        """
+        Similar to is_package_manager_executable(), but return the PM's name.
+        :param executable: the executable of a command.
+        :return: the PM's name when executable is a PM executable, or else None.
+        """
+        for pm_name, pm_setting in pm_settings.items():
+            if executable in pm_setting.executables:
+                return pm_name
+        return None
+
     def handle(self, commands: list, instruction_index: int):
+        """
+        Handle a list of commands from RunHandler.
+        :param commands: all PM-related commands inside this instruction.
+        :param instruction_index: the index of this instruction.
+        :return: None
+        """
         need_optimization_pm_names = []
+
+        # -------------------- Handling PM-related commands --------------------
         for command in commands:
-            if len(command) == 0:
-                logging.error('This dockerfile is too complex, I can\'t handle it now.')
-                raise handle_error.HandleError()
+            assert len(command) > 0
+            # if len(command) == 0:
+            #     logging.error("This dockerfile is too complex, I can't handle it now.")
+            #     raise handle_error.HandleError()
             executable = command[0].s
-            for pm_name, pm_setting in pm_settings.items():
-                if executable in pm_setting.executables:
-                    break
-            else:
-                continue
-            if pm_name not in self.pm_statuses.keys():
-                self.pm_statuses[pm_name] = PMStatus(
+            pm_name = self._get_executable_package_manager(executable)
+
+            if pm_name not in self.pm_statuses.keys():  # Firstly encountered this PM, create a PMStatus
+                self.pm_statuses[pm_name] = PMHandler.PMStatus(
                     cache_dirs=[self._replace_home_char(cache_dir)
                                 for cache_dir in pm_settings[pm_name].default_cache_dirs]
                 )
-            pm_status: PMStatus = self.pm_statuses[pm_name]
+            pm_status: PMHandler.PMStatus = self.pm_statuses[pm_name]
+
+            # Concatenate the command words as string to match the regexes.
             command_str = ' '.join([word.s for word in command[1:]])
 
             # Case for modifying the cache dir
@@ -117,6 +172,7 @@ class PMHandler(object):
                 if match_result:
                     need_optimization_pm_names.append(pm_name)
 
+        # -------------------- Generating optimization strategies --------------------
         # ** Note: Don't generate duplicated strategies for a single instruction including multiple commands!
         insert_before_strategy = None
         add_cache_strategy = None
@@ -149,6 +205,7 @@ class PMHandler(object):
     def _replace_home_char(self, path: str) -> str:
         """
         Replace '~' in the directory path.
-        :return: replaced path
+        :param path: the path to be replaced.
+        :return: replaced path.
         """
         return path.replace('~', self.global_status.user_dirs[self.global_status.user][:-1])

@@ -1,4 +1,8 @@
 class Stats(object):
+    """
+    The statistics of the optimization process.
+    """
+
     def __init__(self):
         self.add_cache_num = 0
         self.insert_before_num = 0
@@ -8,7 +12,12 @@ class Stats(object):
         self.total_insert_before_num = 0
         self.total_syntax_change_num = 0
 
-    def __str__(self):
+    def one_file_str(self):
+        """
+        Return the statistics string of the optimization of one file.
+        :return: the statistics string of the optimization of one file.
+        """
+
         return 'Number of modifications of this dockerfile: {0}\n' \
                ' - Added --mount=type=cache: {1}\n' \
                ' - Inserted commands: {2}\n' \
@@ -18,7 +27,12 @@ class Stats(object):
                     self.insert_before_num,
                     self.syntax_change_num)
 
-    def totalStr(self):
+    def total_str(self):
+        """
+        Return the statistics string of the optimization of all files.
+        :return: the statistics string of the optimization of all files.
+        """
+
         return 'Total number of modifications: {0}\n' \
                ' - Added --mount=type=cache: {1}\n' \
                ' - Inserted commands: {2}\n' \
@@ -28,13 +42,21 @@ class Stats(object):
                     self.total_insert_before_num,
                     self.total_syntax_change_num)
 
-    def clear(self):
+    def clear_one_file(self):
+        """
+        Clear the statistics of one file.
+        :return:
+        """
         self.add_cache_num = 0
         self.insert_before_num = 0
         self.syntax_change_num = 0
 
     def clear_total(self):
-        self.clear()
+        """
+        Clear the statistics of all files.
+        :return:
+        """
+        self.clear_one_file()
         self.total_add_cache_num = 0
         self.total_insert_before_num = 0
         self.total_syntax_change_num = 0
