@@ -24,8 +24,8 @@ from dockerfile_parse import DockerfileParser
 from model import handle_error
 from model.stats import stats
 from pipeline.dockerfile_writer import DockerfileWriter
-from pipeline.optimize.global_optimizer import GlobalOptimizer
-from pipeline.optimize.stage_optimizer import StageOptimizer
+from pipeline.global_optimizer import GlobalOptimizer
+from pipeline.stage_optimizer import StageOptimizer
 from pipeline.stage_simulator import StageSimulator
 from pipeline.stage_splitter import StageSplitter
 
@@ -86,7 +86,7 @@ class Engine(object):
         global changes to the whole dockerfile.
     """
 
-    class EngineSetting(object):
+    class EngineSettings(object):
         """
         The settings of the engine.
         """
@@ -101,18 +101,18 @@ class Engine(object):
             self.logging_level = logging.INFO
 
     def __init__(self, argv):
-        self.setting = Engine.EngineSetting()
+        self.settings = Engine.EngineSettings()
         self._handle_argv(argv)
 
         try:
-            self.setting.fail_fileobj = open(file=self.setting.fail_file, mode='w')
+            self.settings.fail_fileobj = open(file=self.settings.fail_file, mode='w')
         except Exception as e:  # Including: IOError
             logging.error(e)
             exit(-1)
 
         logging.basicConfig(
             format='[%(asctime)s %(levelname)s %(name)s]: %(message)s',
-            level=self.setting.logging_level
+            level=self.settings.logging_level
         )
 
     def _handle_argv(self, argv):
@@ -134,20 +134,20 @@ class Engine(object):
             logging.error('Input path is empty!')
             exit(-1)
 
-        self.setting = Engine.EngineSetting()
-        self.setting.input_file = args[0]
+        self.settings = Engine.EngineSettings()
+        self.settings.input_file = args[0]
 
         for option, value in opts:
             if option == '-o':
-                self.setting.output_file = value
+                self.settings.output_file = value
             elif option == '-s':
-                self.setting.suffix = value
+                self.settings.suffix = value
             elif option == '-S':
-                self.setting.show_stats = True
+                self.settings.show_stats = True
             elif option == '-f':
-                self.setting.fail_file = value
+                self.settings.fail_file = value
             elif option == '-w':
-                self.setting.logging_level = logging.WARNING
+                self.settings.logging_level = logging.WARNING
 
     def run(self):
         """
@@ -155,19 +155,19 @@ class Engine(object):
 
         :return: None
         """
-        if os.path.isdir(self.setting.input_file):
-            if self.setting.output_file is not None:
-                if os.path.exists(self.setting.output_file) and not os.path.isdir(self.setting.output_file):
+        if os.path.isdir(self.settings.input_file):
+            if self.settings.output_file is not None:
+                if os.path.exists(self.settings.output_file) and not os.path.isdir(self.settings.output_file):
                     logging.error("INPUT is a directory, but OUTPUT isn't!")
                     exit(-1)
-                elif not os.path.exists(self.setting.output_file):
-                    os.mkdir(self.setting.output_file)
+                elif not os.path.exists(self.settings.output_file):
+                    os.mkdir(self.settings.output_file)
             self._optimize_directory()
         else:
-            if self.setting.output_file is not None:
-                self._run_one_file(self.setting.input_file, self.setting.output_file)
+            if self.settings.output_file is not None:
+                self._run_one_file(self.settings.input_file, self.settings.output_file)
             else:
-                self._run_one_file(self.setting.input_file, self.setting.input_file + self.setting.suffix)
+                self._run_one_file(self.settings.input_file, self.settings.input_file + self.settings.suffix)
 
     def _run_one_file(self, input_file: str, output_file: str):
         """
@@ -234,14 +234,14 @@ class Engine(object):
             f_out.close()
             logging.warning(
                 'Failed to optimize "{0}". The input file is copied.'.format(input_file, output_file))
-            self.setting.fail_fileobj.write(input_file + '\n')
+            self.settings.fail_fileobj.write(input_file + '\n')
             stats.clear_one_file()
             return
 
         f_in.close()
         f_out.close()
 
-        if self.setting.show_stats:
+        if self.settings.show_stats:
             logging.info(stats.one_file_str())
 
     def _optimize_directory(self):
@@ -251,13 +251,13 @@ class Engine(object):
 
         :return: None
         """
-        input_dir = self.setting.input_file
-        output_dir = self.setting.output_file
+        input_dir = self.settings.input_file
+        output_dir = self.settings.output_file
         for current_dir, dirs, files in os.walk(input_dir):
             for f in files:
                 input_file = os.path.join(current_dir, f)
                 if output_dir is None:
-                    output_file = input_file + self.setting.suffix
+                    output_file = input_file + self.settings.suffix
                 else:
                     output_file = os.path.join(output_dir,
                                                os.path.relpath(input_file, input_dir))
@@ -269,5 +269,5 @@ class Engine(object):
                                                   os.path.relpath(input_sub_dir, input_dir))
                     if not os.path.exists(output_sub_dir):
                         os.mkdir(output_sub_dir)
-        if self.setting.show_stats:
+        if self.settings.show_stats:
             logging.info(stats.total_str())

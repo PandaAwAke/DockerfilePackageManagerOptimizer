@@ -21,7 +21,7 @@ import re
 import utils
 from model import handle_error
 from model.stats import stats
-from pipeline.optimize.optimization_strategy import *
+from model.optimization_strategy import *
 
 
 class StageOptimizer(object):

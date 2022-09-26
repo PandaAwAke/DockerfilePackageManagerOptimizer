@@ -3,8 +3,8 @@ import unittest
 from dockerfile_parse import DockerfileParser
 
 from model import handle_error
-from pipeline.optimize import stage_optimizer
-from pipeline.optimize.optimization_strategy import *
+from pipeline import stage_optimizer
+from model.optimization_strategy import *
 
 
 class TestOptimizer(unittest.TestCase):
