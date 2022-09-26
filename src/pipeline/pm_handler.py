@@ -20,6 +20,7 @@ class PMSetting(object):
                  additional_pre_commands: list = None):
         """
         Initialize the PM's settings.
+
         :param executables: the executables of this PM, for example: [apt, apt-get, ...] for apt.
         :param commands_regex_run: the regular expressions for running the PM download/install/compile commands.
         :param default_cache_dirs: the default download cache directories for this PM
@@ -41,7 +42,8 @@ pm_settings = {}    # All PM's settings. Key: PM's name; Value: a PMSetting obje
 def load_pm_settings():
     """
     Load all PM settings from "PMSettings.yaml" into pm_settings.
-    :return:
+
+    :return: None
     """
     if len(pm_settings) > 0:
         return
@@ -75,6 +77,7 @@ class PMHandler(object):
     """
     Maintain a PMStatus for every PM and try to generate OptimizationStrategies
         (pipeline.optimize.optimization_strategy).
+
     -   Take pm-related commands from RunHandler and try to handle them.
     -   When this instruction can be optimized, try to generate optimization strategies.
     """
@@ -90,6 +93,7 @@ class PMHandler(object):
     def __init__(self, global_status: GlobalStatus):
         """
         Initialize the PMHandler.
+
         :param global_status: the global_status of this stage created by stage simulator.
         """
         self.global_status = global_status
@@ -101,6 +105,7 @@ class PMHandler(object):
     def is_package_manager_executable(executable: str) -> bool:
         """
         This function is used by RunHandler to determine if the executable is a PM executable.
+
         :param executable: the executable of a command.
         :return: True when executable is a PM executable, or else False.
         """
@@ -113,6 +118,7 @@ class PMHandler(object):
     def _get_executable_package_manager(executable: str):
         """
         Similar to is_package_manager_executable(), but return the PM's name.
+
         :param executable: the executable of a command.
         :return: the PM's name when executable is a PM executable, or else None.
         """
@@ -124,6 +130,7 @@ class PMHandler(object):
     def handle(self, commands: list, instruction_index: int):
         """
         Handle a list of commands from RunHandler.
+
         :param commands: all PM-related commands inside this instruction.
         :param instruction_index: the index of this instruction.
         :return: None
@@ -205,6 +212,7 @@ class PMHandler(object):
     def _replace_home_char(self, path: str) -> str:
         """
         Replace '~' in the directory path.
+
         :param path: the path to be replaced.
         :return: replaced path.
         """

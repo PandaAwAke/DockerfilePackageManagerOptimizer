@@ -12,6 +12,7 @@ class RunHandler(object):
     """
     Take a RUN instruction from Stage Simulator, and parse the commands inside the instruction.
     Package-manager-related and global-status-related commands are considered.
+
     -   Note that a RUN instruction can consist of multiple commands, such as
         "RUN apt-get update && apt-get install gcc".
     -   All package-manager-related commands will be passed to PMHandler.
@@ -20,6 +21,7 @@ class RunHandler(object):
     def __init__(self, global_status: GlobalStatus):
         """
         Initialize the RunHandler.
+
         :param global_status: the global_status of this stage created by stage simulator.
         """
         self.global_status = global_status
@@ -80,6 +82,7 @@ class RunHandler(object):
         """
         Preprocess the commands_str behind RUN (exec-form).
         ENV variables won't be substituted here.
+
         :param commands_str: the exec-form command string, for example '["echo", "hello, world!"]'
         :return: a single-member list of: list of processed CommandWords when commands_str is exec-form;
                     (For example,
@@ -231,6 +234,7 @@ class RunHandler(object):
     def _handle_useradd(self, command: list):
         """
         Handle "useradd" command, update global_status.
+
         :param command: a list of CommandWords.
         :return: None
         """
@@ -265,6 +269,7 @@ class RunHandler(object):
     def _handle_usermod(self, command: list):
         """
         Handle "usermod" command, update global_status.
+
         :param command: a list of CommandWords.
         :return: None
         """

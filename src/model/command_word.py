@@ -12,6 +12,7 @@ class CommandWord:
     def __init__(self, s: str, kind=NORMAL):
         """
         Initialize the command word.
+
         :param s: the string of the word.
         :param kind: the kind of the word, should be one of CommandWord.NORMAL,
                     CommandWord.SINGLE_QUOTED, CommandWord.DOUBLE_QUOTED, CommandWord.EXEC_FORM_ARG.

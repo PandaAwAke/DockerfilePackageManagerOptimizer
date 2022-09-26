@@ -6,12 +6,14 @@ class StageSimulator(object):
     """
     Take a stage, simulates the instructions inside it, and maintain the
     GlobalStatus (model.global_status) during the simulation.
+
     -   RUN instructions will be passed to RunHandler.
     """
 
     def __init__(self, stage):
         """
         Initialize the stage simulator.
+
         :param stage: the stage to simulate.
         """
         # a stage is (instructions, contexts)
@@ -22,8 +24,10 @@ class StageSimulator(object):
     def simulate(self, start_instruction_index=0, end_instruction_index=-1):
         """
         Simulate the instructions of the stage.
+
         -   USER and WORKDIR instructions will update the global_status.
         -   RUN instructions will be passed to RunHandler.
+
         :param start_instruction_index:
         :param end_instruction_index:
         :return:
@@ -66,6 +70,7 @@ class StageSimulator(object):
     def get_optimization_strategies(self):
         """
         Get the optimization strategies from PMHandler.
+
         :return: the optimization strategies.
         """
         return self.run_handler.pm_handler.optimization_strategies

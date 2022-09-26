@@ -22,6 +22,7 @@ class OptimizationStrategy:
     def __init__(self, instruction_index: int):
         """
         Initialize the basic optimization strategy.
+
         :param instruction_index: the index of the instruction.
         """
         self.instruction_index = instruction_index
@@ -35,6 +36,7 @@ class AddCacheStrategy(OptimizationStrategy):
     def __init__(self, instruction_index: int, cache_dirs: list):
         """
         Initialize the strategy.
+
         :param instruction_index: the index of the instruction.
         :param cache_dirs: the cache directories need to be added inside "--mount=type=cache".
         """
@@ -50,6 +52,7 @@ class InsertBeforeStrategy(OptimizationStrategy):
     def __init__(self, instruction_index: int, commands_insert: list):
         """
         Initialize the strategy.
+
         :param instruction_index: the index of the instruction.
         :param commands_insert: the commands need to be added before this instruction.
         """

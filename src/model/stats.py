@@ -15,6 +15,7 @@ class Stats(object):
     def one_file_str(self):
         """
         Return the statistics string of the optimization of one file.
+
         :return: the statistics string of the optimization of one file.
         """
 
@@ -30,6 +31,7 @@ class Stats(object):
     def total_str(self):
         """
         Return the statistics string of the optimization of all files.
+
         :return: the statistics string of the optimization of all files.
         """
 
@@ -45,6 +47,7 @@ class Stats(object):
     def clear_one_file(self):
         """
         Clear the statistics of one file.
+
         :return:
         """
         self.add_cache_num = 0
@@ -54,6 +57,7 @@ class Stats(object):
     def clear_total(self):
         """
         Clear the statistics of all files.
+
         :return:
         """
         self.clear_one_file()

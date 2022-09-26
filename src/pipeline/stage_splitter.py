@@ -13,6 +13,7 @@ class StageSplitter(object):
     def __init__(self, dockerfile: dockerfile_parse.DockerfileParser = None):
         """
         Initialize the splitter.
+
         :param dockerfile: the DockerfileParser object of the input dockerfile.
         """
         if dockerfile is None:
@@ -23,6 +24,7 @@ class StageSplitter(object):
     def get_stages(self):
         """
         Split the dockerfile into stages.
+
         :return: a list of stages. A stage is (instructions, contexts).
             -   instructions: a list of instructions, an instruction is a dict (from dockerfile_parse.parser):
                 {"instruction": "FROM",       # always upper-case

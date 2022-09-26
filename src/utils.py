@@ -4,6 +4,7 @@ import dockerfile_parse.util
 def substitute_env(s: str, context) -> str:
     """
     Substitute environment variables inside s using context.
+
     :param s: the string to be processed.
     :param context: the context object of this instruction.
     :return: processed string.

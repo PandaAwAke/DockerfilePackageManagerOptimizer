@@ -32,6 +32,7 @@ class StageOptimizer(object):
     def __init__(self, stage):
         """
         Initialize the optimizer.
+
         :param stage: the stage to optimize.
         """
         self.new_stage_lines = []
@@ -40,6 +41,7 @@ class StageOptimizer(object):
     def optimize(self, optimization_strategies: list) -> list:
         """
         Optimize the stage using optimization_strategies.
+
         :param optimization_strategies: a list of OptimizationStrategies from PMHandler.
         :return: a list of string lines describing the optimized stage.
         """
@@ -80,6 +82,7 @@ class StageOptimizer(object):
     def _optimize_add_cache(self, strategy: AddCacheStrategy, instruction: dict, context):
         """
         Apply the AddCacheStrategy for the instruction.
+
         :param strategy: the AddCacheStrategy.
         :param instruction: the instruction to optimize.
         :param context: the context of the instruction.
@@ -133,6 +136,7 @@ class StageOptimizer(object):
     def _optimize_insert_before(self, strategy: InsertBeforeStrategy, last_instruction: dict):
         """
         Apply the InsertBeforeStrategy for the instruction.
+
         :param strategy: the InsertBeforeStrategy.
         :param last_instruction: the instruction before the insertion point. This is to avoid inserting
                 duplicated commands. When try to optimize an optimized Dockerfile, this will be helpful.

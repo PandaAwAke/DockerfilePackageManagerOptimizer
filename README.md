@@ -3,7 +3,7 @@ A tool for dockerfile package manager optimization.
 
 ## Usage
 ```shell
-Usage: python src/main.py [OPTIONS] INPUT
+Usage: python src/main.py [OPTIONS] [INPUT]
 If INPUT is a directory, all files (including subdirectories) in it will be optimized.
 
 Options:
@@ -16,6 +16,7 @@ Options:
   -S            Show the statistics of optimizations
   -f FAIL_FILE  Output all dockerfiles that are failed to optimize into FAIL_FILE
                 FAIL_FILE is './DPMO_failures.txt' by default
+  -e            Only display error messages
 ```
 
 ### Examples:

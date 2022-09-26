@@ -32,7 +32,7 @@ from pipeline.stage_splitter import StageSplitter
 
 def _print_usage():
     usage = """\
-Usage: python src/main.py [OPTIONS] INPUT
+Usage: python main.py [OPTIONS] [INPUT]
 If INPUT is a directory, all files (including subdirectories) in it will be optimized.
 
 Options:
@@ -45,6 +45,7 @@ Options:
   -S            Show the statistics of optimizations
   -f FAIL_FILE  Output all dockerfiles that are failed to optimize into FAIL_FILE
                 FAIL_FILE is './DPMO_failures.txt' by default
+  -w            Only display warning and error messages
 """
     print(usage)
 
@@ -56,25 +57,31 @@ class Engine(object):
     copy the input file to the output path.
 
     The pipeline of this tool can be described as follows:
+
     1.  Stage Splitter (pipeline.stage_splitter). It splits the dockerfile into stages,
         each of which starts with a "FROM" instruction.
+
     2.  Stage Simulator (pipeline.stage_simulator). It takes a stage, simulates the instructions
         inside it, and maintains a GlobalStatus (model.global_status) during the simulation.
         -   Every stage from Step 1 will be simulated separately. Stages won't interfere with
             each other.
         -   RUN instructions will be passed to RunHandler.
+
     3.  Run Handler (pipeline.run_handler). It takes a RUN instruction from Step 2, and parses
         the commands inside the instruction. Then it'll try to handle package-manager-related
         and global-status-related commands.
         -   Note that a RUN instruction can consist of multiple commands, such as
             "RUN apt-get update && apt-get install gcc".
         -   All package-manager-related commands will be passed to PMHandler.
+
     4.  PM Handler (pipeline.pm_handler), PM refers to Package Manager. PMHandler maintains
         a PMStatus for every PM. It takes pm-related commands in Step 3 and try to handle them.
         When it realized that this instruction can be optimized, it'll try to generate an
         OptimizationStrategy (pipeline.optimize.optimization_strategy).
+
     5.  Stage Optimizer (pipeline.optimize.stage_optimizer). It takes the stage, then tries to
         apply all optimization strategies in Step 4.
+
     6.  Global Optimizer (pipeline.optimize.global_optimizer). It takes all stages, and makes some
         global changes to the whole dockerfile.
     """
@@ -91,29 +98,32 @@ class Engine(object):
             self.show_stats = False
             self.fail_file = './DPMO_failures.txt'
             self.fail_fileobj = None
+            self.logging_level = logging.INFO
 
     def __init__(self, argv):
-        logging.basicConfig(
-            format='[%(asctime)s %(levelname)s %(name)s]: %(message)s',
-            level=logging.INFO
-        )
-
         self.setting = Engine.EngineSetting()
         self._handle_argv(argv)
+
         try:
             self.setting.fail_fileobj = open(file=self.setting.fail_file, mode='w')
         except Exception as e:  # Including: IOError
             logging.error(e)
             exit(-1)
 
+        logging.basicConfig(
+            format='[%(asctime)s %(levelname)s %(name)s]: %(message)s',
+            level=self.setting.logging_level
+        )
+
     def _handle_argv(self, argv):
         """
         Parse the command-line arguments, and then set the engine settings.
+
         :param argv: command-line arguments (sys.argv[1:])
         :return: None
         """
         try:
-            opts, args = getopt.getopt(argv, 'ho:s:Sf:e')
+            opts, args = getopt.getopt(argv, 'ho:s:Sf:w')
         except getopt.GetoptError as e:
             logging.error('Invalid option: "{0}"'.format(e.opt))
             exit(-1)
@@ -136,10 +146,13 @@ class Engine(object):
                 self.setting.show_stats = True
             elif option == '-f':
                 self.setting.fail_file = value
+            elif option == '-w':
+                self.setting.logging_level = logging.WARNING
 
     def run(self):
         """
         Process input file(s). The actual execution is in _run_one_file().
+
         :return: None
         """
         if os.path.isdir(self.setting.input_file):
@@ -159,6 +172,7 @@ class Engine(object):
     def _run_one_file(self, input_file: str, output_file: str):
         """
         Process one dockerfile, and execute the pipeline.
+
         :param input_file: the path of the dockerfile to be optimized.
         :param output_file: the path of the result to be saved.
         :return: None
@@ -182,7 +196,7 @@ class Engine(object):
                 return
 
             if len(stages[0][0]) == 0:
-                logging.info('Encountered an empty file: {0}'.format(input_file))
+                logging.info('Encountered an empty file: "{0}"'.format(input_file))
                 return
 
             global_optimizer = GlobalOptimizer()
@@ -190,7 +204,7 @@ class Engine(object):
                 logging.error('"{0}" uses a non-official frontend, I cannot handle this.'.format(input_file))
                 return
 
-            logging.info('Optimizing {0} ...'.format(input_file))
+            logging.info('Optimizing "{0}" ...'.format(input_file))
 
             new_stages_lines = []
             total_strategies = 0
@@ -207,19 +221,19 @@ class Engine(object):
                 global_optimizer.optimize(stages, new_stages_lines)
                 writer = DockerfileWriter(dockerfile_out)
                 writer.write(new_stages_lines)
-                logging.info('Successfully optimized {0} to {1}.'.format(input_file, output_file))
+                logging.info('Successfully optimized "{0}" to "{1}".'.format(input_file, output_file))
             else:
                 # just copy output from input
                 f_out.write(f_in.read())
-                logging.info('{0} has nothing to optimize.'.format(input_file))
+                logging.info('"{0}" has nothing to optimize.'.format(input_file))
 
         except handle_error.HandleError as e:  # Failed to optimize this dockerfile
             # just copy output from input
             f_out.write(f_in.read())
             f_in.close()
             f_out.close()
-            logging.info(
-                'Failed to optimize {0}. The input file is copied.'.format(input_file, output_file))
+            logging.warning(
+                'Failed to optimize "{0}". The input file is copied.'.format(input_file, output_file))
             self.setting.fail_fileobj.write(input_file + '\n')
             stats.clear_one_file()
             return
@@ -234,7 +248,8 @@ class Engine(object):
         """
         Process the dockerfiles inside the input directory.
         The actual execution is in _run_one_file().
-        :return:
+
+        :return: None
         """
         input_dir = self.setting.input_file
         output_dir = self.setting.output_file

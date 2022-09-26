@@ -25,6 +25,7 @@ from model.stats import stats
 class GlobalOptimizer:
     """
     Take all stages, and make some global changes to the whole dockerfile.
+
     -   Add/Modify the syntax directive. For example, add "# syntax=docker/dockerfile:1.3".
     """
 
@@ -35,6 +36,7 @@ class GlobalOptimizer:
         """
         Determine if a stage is optimizable.
         If a dockerfile does not use the official frontend, then we cannot optimize it.
+
         :param stages: the stages of the dockerfile.
         :return: True if this dockerfile can be optimized, or else False.
         """
@@ -58,6 +60,7 @@ class GlobalOptimizer:
     def optimize(self, stages: list, new_stages_lines: list):
         """
         Optimize the whole dockerfile.
+
         :param stages: the stages of the dockerfile.
         :param new_stages_lines:
         :return: None
@@ -113,6 +116,7 @@ class GlobalOptimizer:
         Get the value of syntax directive.
         For "# syntax=docker/dockerfile:1.3", this will return "1.3".
         If s isn't in this format, then this will return None.
+
         :param s: the string to parse.
         :return: value of syntax directive, or None if s isn't in syntax directive format.
         """
