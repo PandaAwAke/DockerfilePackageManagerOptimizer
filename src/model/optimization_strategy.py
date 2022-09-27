@@ -58,3 +58,18 @@ class InsertBeforeStrategy(OptimizationStrategy):
         """
         super().__init__(instruction_index=instruction_index)
         self.commands_insert = commands_insert
+
+class RemoveCommandStrategy(OptimizationStrategy):
+    """
+    The "Remove-Command" optimization strategy for an instruction.
+    """
+
+    def __init__(self, instruction_index: int, remove_command_indices: list):
+        """
+        Initialize the strategy.
+
+        :param instruction_index: the index of the instruction.
+        :param commands_remove: the commands need to be removed in this instruction.
+        """
+        super().__init__(instruction_index=instruction_index)
+        self.remove_command_indices = remove_command_indices

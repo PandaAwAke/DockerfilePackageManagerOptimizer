@@ -1,4 +1,30 @@
 import dockerfile_parse.util
+from model.global_status import GlobalStatus
+
+
+def replace_home_char(path: str, global_status: GlobalStatus) -> str:
+    """
+    Replace '~' in the directory path.
+
+    :param path: the path to be replaced.
+    :param global_status: the global_status object.
+    :return: replaced path.
+    """
+    return path.replace('~', global_status.user_dirs[global_status.user][:-1])
+
+
+def get_absolute_path(path: str, global_status: GlobalStatus) -> str:
+    """
+    Return the absolute path of "path".
+    If path is already an absolute path, then return itself.
+
+    :param path: the relative or absolute path.
+    :param global_status: the global_status object.
+    :return: absolute path.
+    """
+    if path.startswith('/'):
+        return path
+    return global_status.work_dir + path
 
 
 def substitute_env(s: str, context) -> str:

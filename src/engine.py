@@ -78,6 +78,7 @@ class Engine(object):
                         not os.path.isdir(config.engine_settings.output_file):
                     logging.error("INPUT is a directory, but OUTPUT isn't!")
                     exit(-1)
+                    return
                 elif not os.path.exists(config.engine_settings.output_file):
                     os.mkdir(config.engine_settings.output_file)
             self._optimize_directory()

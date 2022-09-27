@@ -29,6 +29,8 @@ packageManagers:
       - /var/cache/apt
     additional-pre-commands:
       - rm -f /etc/apt/apt.conf.d/docker-clean; echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache
+    anti-cache-commands-regex:
+      - ^rm\s+
 
   go:
     executables:

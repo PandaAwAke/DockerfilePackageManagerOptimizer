@@ -79,9 +79,11 @@ def _handle_argv(argv):
     except getopt.GetoptError as e:
         logging.error('Invalid option: "{0}"'.format(e.opt))
         exit(-1)
+        return
     if len(args) == 0:
         logging.error('Input path is empty!')
         exit(-1)
+        return
 
     settings.input_dir = args[0]
 

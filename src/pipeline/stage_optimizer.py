@@ -148,4 +148,8 @@ class StageOptimizer(object):
                     (last_instruction is not None and last_instruction['value'] != command_insert):
                 self.new_stage_lines.append('RUN ' + command_insert + '\n')
                 stats.insert_before()    # Stats
+    
+    def _optimize_remove_command(self, strategy: RemoveCommandStrategy, instruction: dict):
+        # TODO: finish this
+        ...
 
