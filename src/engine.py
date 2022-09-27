@@ -15,12 +15,12 @@ limitations under the License.
 """
 
 
-import getopt
 import logging
 import os
 
 from dockerfile_parse import DockerfileParser
 
+import config
 from model import handle_error
 from model.stats import stats
 from pipeline.dockerfile_writer import DockerfileWriter
@@ -28,26 +28,6 @@ from pipeline.global_optimizer import GlobalOptimizer
 from pipeline.stage_optimizer import StageOptimizer
 from pipeline.stage_simulator import StageSimulator
 from pipeline.stage_splitter import StageSplitter
-
-
-def _print_usage():
-    usage = """\
-Usage: python main.py [OPTIONS] [INPUT]
-If INPUT is a directory, all files (including subdirectories) in it will be optimized.
-
-Options:
-  -h            Display this help message and exit
-  -o OUTPUT     Optimized output dockerfile path, default to INPUT + SUFFIX
-                (SUFFIX is ".optimized" by default, so this will be "INPUT.optimized" by default)
-                If INPUT is a directory, then OUTPUT should be a directory too
-  -s SUFFIX     Set the prefix of the output file, default to ".optimized"
-                If INPUT and OUTPUT both are directories, then SUFFIX will be ignored
-  -S            Show the statistics of optimizations
-  -f FAIL_FILE  Output all dockerfiles that are failed to optimize into FAIL_FILE
-                FAIL_FILE is './DPMO_failures.txt' by default
-  -w            Only display warning and error messages
-"""
-    print(usage)
 
 
 class Engine(object):
@@ -86,90 +66,29 @@ class Engine(object):
         global changes to the whole dockerfile.
     """
 
-    class EngineSettings(object):
-        """
-        The settings of the engine.
-        """
-
-        def __init__(self):
-            self.input_file = None
-            self.output_file = None
-            self.suffix = '.optimized'
-            self.show_stats = False
-            self.fail_file = './DPMO_failures.txt'
-            self.fail_fileobj = None
-            self.logging_level = logging.INFO
-
-    def __init__(self, argv):
-        self.settings = Engine.EngineSettings()
-        self._handle_argv(argv)
-
-        try:
-            self.settings.fail_fileobj = open(file=self.settings.fail_file, mode='w')
-        except Exception as e:  # Including: IOError
-            logging.error(e)
-            exit(-1)
-
-        logging.basicConfig(
-            format='[%(asctime)s %(levelname)s %(name)s]: %(message)s',
-            level=self.settings.logging_level
-        )
-
-    def _handle_argv(self, argv):
-        """
-        Parse the command-line arguments, and then set the engine settings.
-
-        :param argv: command-line arguments (sys.argv[1:])
-        :return: None
-        """
-        try:
-            opts, args = getopt.getopt(argv, 'ho:s:Sf:w')
-        except getopt.GetoptError as e:
-            logging.error('Invalid option: "{0}"'.format(e.opt))
-            exit(-1)
-        if len(opts) > 0 and opts[0][0] == '-h':
-            _print_usage()
-            exit(0)
-        if len(args) == 0:
-            logging.error('Input path is empty!')
-            exit(-1)
-
-        self.settings = Engine.EngineSettings()
-        self.settings.input_file = args[0]
-
-        for option, value in opts:
-            if option == '-o':
-                self.settings.output_file = value
-            elif option == '-s':
-                self.settings.suffix = value
-            elif option == '-S':
-                self.settings.show_stats = True
-            elif option == '-f':
-                self.settings.fail_file = value
-            elif option == '-w':
-                self.settings.logging_level = logging.WARNING
-
     def run(self):
         """
         Process input file(s). The actual execution is in _run_one_file().
 
         :return: None
         """
-        if os.path.isdir(self.settings.input_file):
-            if self.settings.output_file is not None:
-                if os.path.exists(self.settings.output_file) and not os.path.isdir(self.settings.output_file):
+        if os.path.isdir(config.engine_settings.input_file):
+            if config.engine_settings.output_file is not None:
+                if os.path.exists(config.engine_settings.output_file) and \
+                        not os.path.isdir(config.engine_settings.output_file):
                     logging.error("INPUT is a directory, but OUTPUT isn't!")
                     exit(-1)
-                elif not os.path.exists(self.settings.output_file):
-                    os.mkdir(self.settings.output_file)
+                elif not os.path.exists(config.engine_settings.output_file):
+                    os.mkdir(config.engine_settings.output_file)
             self._optimize_directory()
         else:
-            if self.settings.output_file is not None:
-                self._run_one_file(self.settings.input_file, self.settings.output_file)
+            if config.engine_settings.output_file is not None:
+                self._run_one_file(config.engine_settings.input_file, config.engine_settings.output_file)
             else:
-                self._run_one_file(self.settings.input_file, self.settings.input_file + self.settings.suffix)
+                self._run_one_file(config.engine_settings.input_file, config.engine_settings.input_file + config.engine_settings.suffix)
 
-    def _run_one_file(self, input_file: str, output_file: str):
+    @staticmethod
+    def _run_one_file(input_file: str, output_file: str):
         """
         Process one dockerfile, and execute the pipeline.
 
@@ -234,14 +153,14 @@ class Engine(object):
             f_out.close()
             logging.warning(
                 'Failed to optimize "{0}". The input file is copied.'.format(input_file, output_file))
-            self.settings.fail_fileobj.write(input_file + '\n')
+            config.engine_settings.fail_fileobj.write(input_file + '\n')
             stats.clear_one_file()
             return
 
         f_in.close()
         f_out.close()
 
-        if self.settings.show_stats:
+        if config.engine_settings.show_stats:
             logging.info(stats.one_file_str())
 
     def _optimize_directory(self):
@@ -251,13 +170,13 @@ class Engine(object):
 
         :return: None
         """
-        input_dir = self.settings.input_file
-        output_dir = self.settings.output_file
+        input_dir = config.engine_settings.input_file
+        output_dir = config.engine_settings.output_file
         for current_dir, dirs, files in os.walk(input_dir):
             for f in files:
                 input_file = os.path.join(current_dir, f)
                 if output_dir is None:
-                    output_file = input_file + self.settings.suffix
+                    output_file = input_file + config.engine_settings.suffix
                 else:
                     output_file = os.path.join(output_dir,
                                                os.path.relpath(input_file, input_dir))
@@ -269,5 +188,5 @@ class Engine(object):
                                                   os.path.relpath(input_sub_dir, input_dir))
                     if not os.path.exists(output_sub_dir):
                         os.mkdir(output_sub_dir)
-        if self.settings.show_stats:
+        if config.engine_settings.show_stats:
             logging.info(stats.total_str())

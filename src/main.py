@@ -10,8 +10,10 @@
 """
 import sys
 
+import args_handler
 from engine import Engine
 
 if __name__ == '__main__':
-    engine = Engine(sys.argv[1:])
+    args_handler.init_by_argv(sys.argv[1:])
+    engine = Engine()
     engine.run()

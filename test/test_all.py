@@ -2,7 +2,7 @@ import unittest
 
 from dockerfile_parse import DockerfileParser
 
-import global_settings
+import config
 from model import handle_error
 from pipeline.stage_optimizer import StageOptimizer
 from pipeline.stage_simulator import StageSimulator
@@ -12,7 +12,7 @@ class TestAll(unittest.TestCase):
 
     def setUp(self):
         self.parser = DockerfileParser('tmp')
-        global_settings.global_settings.pm_settings_path = '../resources/PMSettings.yaml'
+        config.global_settings.pm_settings_path = '../resources/PMSettings.yaml'
 
     def _lines_wrapper(self, lines: list) -> tuple:
         self.parser.lines = [line + '\n' for line in lines]

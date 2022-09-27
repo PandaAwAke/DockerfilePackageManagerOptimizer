@@ -3,7 +3,7 @@ import re
 
 import yaml
 
-import global_settings
+import config
 from model import handle_error
 from model.global_status import GlobalStatus
 from model.optimization_strategy import *
@@ -49,7 +49,7 @@ def load_pm_settings():
     if len(pm_settings) > 0:
         return
     try:
-        f = open(file=global_settings.global_settings.pm_settings_path, mode='r', encoding='utf-8')
+        f = open(file=config.global_settings.pm_settings_path, mode='r', encoding='utf-8')
         pm_yaml_settings = yaml.safe_load(f)
     except Exception as e:  # Including: IOError, yaml.YAMLError
         logging.error(e)
