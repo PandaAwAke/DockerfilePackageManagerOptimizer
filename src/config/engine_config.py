@@ -9,7 +9,7 @@ class GlobalSettings(object):
 
     """
 
-    def __init__(self, pm_settings_path='resources/PMSettings.yaml'):
+    def __init__(self, pm_settings_path='resources/settings.yaml'):
         self.pm_settings_path = pm_settings_path
 
 
@@ -30,3 +30,4 @@ class EngineSettings(object):
 
 global_settings = GlobalSettings()
 engine_settings = EngineSettings()
+

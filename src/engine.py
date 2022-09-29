@@ -20,7 +20,8 @@ import os
 
 from dockerfile_parse import DockerfileParser
 
-import config
+from config.engine_config import engine_settings
+from config.optimization_config import load_optimization_settings
 from model import handle_error
 from model.stats import stats
 from pipeline.dockerfile_writer import DockerfileWriter
@@ -66,27 +67,30 @@ class Engine(object):
         global changes to the whole dockerfile.
     """
 
+    def __init__(self):
+        load_optimization_settings()
+
     def run(self):
         """
         Process input file(s). The actual execution is in _run_one_file().
 
         :return: None
         """
-        if os.path.isdir(config.engine_settings.input_file):
-            if config.engine_settings.output_file is not None:
-                if os.path.exists(config.engine_settings.output_file) and \
-                        not os.path.isdir(config.engine_settings.output_file):
+        if os.path.isdir(engine_settings.input_file):
+            if engine_settings.output_file is not None:
+                if os.path.exists(engine_settings.output_file) and \
+                        not os.path.isdir(engine_settings.output_file):
                     logging.error("INPUT is a directory, but OUTPUT isn't!")
                     exit(-1)
                     return
-                elif not os.path.exists(config.engine_settings.output_file):
-                    os.mkdir(config.engine_settings.output_file)
+                self._create_output_directory(engine_settings.output_file)
             self._optimize_directory()
         else:
-            if config.engine_settings.output_file is not None:
-                self._run_one_file(config.engine_settings.input_file, config.engine_settings.output_file)
+            if engine_settings.output_file is not None:
+                self._create_output_directory(os.path.dirname(engine_settings.output_file))
+                self._run_one_file(engine_settings.input_file, engine_settings.output_file)
             else:
-                self._run_one_file(config.engine_settings.input_file, config.engine_settings.input_file + config.engine_settings.suffix)
+                self._run_one_file(engine_settings.input_file, engine_settings.input_file + engine_settings.suffix)
 
     @staticmethod
     def _run_one_file(input_file: str, output_file: str):
@@ -131,7 +135,7 @@ class Engine(object):
             for stage in stages:  # stage is (instructions, contexts)
                 _simulator = StageSimulator(stage)
                 _simulator.simulate()
-                _optimizer = StageOptimizer(stage)
+                _optimizer = StageOptimizer(stage, dockerfile_in.lines)
                 strategies = _simulator.get_optimization_strategies()
                 total_strategies += len(strategies)
                 new_stage_lines = _optimizer.optimize(strategies)
@@ -154,14 +158,14 @@ class Engine(object):
             f_out.close()
             logging.warning(
                 'Failed to optimize "{0}". The input file is copied.'.format(input_file, output_file))
-            config.engine_settings.fail_fileobj.write(input_file + '\n')
+            engine_settings.fail_fileobj.write(input_file + '\n')
             stats.clear_one_file()
             return
 
         f_in.close()
         f_out.close()
 
-        if config.engine_settings.show_stats:
+        if engine_settings.show_stats:
             logging.info(stats.one_file_str())
 
     def _optimize_directory(self):
@@ -171,13 +175,13 @@ class Engine(object):
 
         :return: None
         """
-        input_dir = config.engine_settings.input_file
-        output_dir = config.engine_settings.output_file
+        input_dir = engine_settings.input_file
+        output_dir = engine_settings.output_file
         for current_dir, dirs, files in os.walk(input_dir):
             for f in files:
                 input_file = os.path.join(current_dir, f)
                 if output_dir is None:
-                    output_file = input_file + config.engine_settings.suffix
+                    output_file = input_file + engine_settings.suffix
                 else:
                     output_file = os.path.join(output_dir,
                                                os.path.relpath(input_file, input_dir))
@@ -189,5 +193,17 @@ class Engine(object):
                                                   os.path.relpath(input_sub_dir, input_dir))
                     if not os.path.exists(output_sub_dir):
                         os.mkdir(output_sub_dir)
-        if config.engine_settings.show_stats:
+        if engine_settings.show_stats:
             logging.info(stats.total_str())
+
+    def _create_output_directory(self, output_dir):
+        """
+        Create directory output_dir recursively.
+        :param output_dir: the directory path to create.
+        :return: None
+        """
+        if os.path.exists(output_dir) or output_dir == '':
+            return
+        else:
+            self._create_output_directory(os.path.dirname(output_dir))
+            os.mkdir(output_dir)

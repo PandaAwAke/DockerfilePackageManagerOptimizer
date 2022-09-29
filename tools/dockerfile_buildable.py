@@ -16,9 +16,9 @@ limitations under the License.
 import getopt
 import logging
 import os
+import platform
 import subprocess
 import sys
-import platform
 
 """
 A tool for testing whether a directory of dockerfiles can be built successfully (without build context).

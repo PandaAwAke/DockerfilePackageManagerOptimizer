@@ -19,7 +19,9 @@ class StageSimulator(object):
         # a stage is (instructions, contexts)
         self.instructions, self.contexts = stage
         self.global_status = GlobalStatus()
-        self.run_handler = RunHandler(self.global_status)
+        self.optimization_strategies = []
+        self.run_handler = RunHandler(self.global_status, self.optimization_strategies)
+
 
     def simulate(self, start_instruction_index=0, end_instruction_index=-1):
         """
@@ -73,4 +75,4 @@ class StageSimulator(object):
 
         :return: the optimization strategies.
         """
-        return self.run_handler.pm_handler.optimization_strategies
+        return self.optimization_strategies

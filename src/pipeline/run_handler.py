@@ -1,11 +1,13 @@
 import logging
 import re
 
-import utils
+from config import optimization_config
 from model import handle_error
 from model.command_word import CommandWord
 from model.global_status import GlobalStatus
+from model.optimization_strategy import RemoveCommandStrategy
 from pipeline.pm_handler import PMHandler
+from util import str_util, shell_util
 
 
 class RunHandler(object):
@@ -18,14 +20,15 @@ class RunHandler(object):
     -   All package-manager-related commands will be passed to PMHandler.
     """
 
-    def __init__(self, global_status: GlobalStatus):
+    def __init__(self, global_status: GlobalStatus, optimization_strategies):
         """
         Initialize the RunHandler.
 
         :param global_status: the global_status of this stage created by stage simulator.
         """
         self.global_status = global_status
-        self.pm_handler = PMHandler(global_status=global_status)
+        self.pm_handler = PMHandler(global_status=global_status, optimization_strategies=optimization_strategies)
+        self.optimization_strategies = optimization_strategies
 
     def handle(self, commands_str: str, context, instruction_index: int):
         """
@@ -39,14 +42,17 @@ class RunHandler(object):
         :return: None
         """
         # Pay attention to RUN options, such as RUN --mount, this should be ignored
-        commands_str = self._remove_run_options(commands_str)
+        _, commands_str = str_util.separate_run_options(commands_str)
         commands = self._process_exec_form(commands_str)
         if commands is None:
-            commands = self._process_shell_form(commands_str, context)
+            commands, _ = shell_util.process_shell_form(commands_str, context)
         commands = self._handle_bash_c(commands, context)
+
         pm_related_commands = []
+        remove_command_indices = []
         # Now we got all commands in this RUN instruction!
-        for command_words in commands:
+        for index in range(len(commands)):
+            command_words = commands[index]
             if len(command_words) == 0:
                 continue
             executable = command_words[0].s
@@ -60,22 +66,17 @@ class RunHandler(object):
                 pm_related_commands.append(command_words)
             # TODO: Handle Shell Script
             else:
-                ...
+                if self._need_remove_anti_cache_commands(command_words):
+                    remove_command_indices.append(index)
+
         if len(pm_related_commands) > 0:
             self.pm_handler.handle(commands=pm_related_commands, instruction_index=instruction_index)
+            # self.pm_handler.handle(commands=commands, instruction_index=instruction_index)
 
-    # --------------------- PreProcessing ---------------------
-    @staticmethod
-    def _remove_brackets(s: str) -> str:
-        return s.replace('(', '').replace(')', '')
-
-    @staticmethod
-    def _remove_run_options(commands_str: str) -> str:
-        # Remove RUN options, such as --mount=type=cache
-        remove_run_option_re = re.compile('^\s*(--\S+\s*)*([\s\S]*?)\s*$')
-        match_result = remove_run_option_re.match(commands_str)
-        assert match_result is not None and match_result.group(2) is not None
-        return match_result.group(2)
+        # --------------- Generate RemoveCommandStrategy ---------------
+        if len(remove_command_indices) > 0:
+            remove_command_strategy = RemoveCommandStrategy(instruction_index, remove_command_indices)
+            self.optimization_strategies.append(remove_command_strategy)
 
     @staticmethod
     def _process_exec_form(commands_str: str):
@@ -107,104 +108,10 @@ class RunHandler(object):
         else:
             return None
 
-    def _process_shell_form(self, commands_str: str, context) -> list:
-        """
-        Preprocess the commands_str behind RUN (shell-form).
-        all commands inside commands_str (connected with &&, ||, etc) will be returned.
-        Note: escape character will not be translated inside double quotes, but \" inside
-              double quotes can be recognized.
-              ENV variables are substituted too (including string inside double quotes).
+    # --------------------- Handling executables ---------------------
 
-        Examples:
-        ->  apt-get install python3-pip && echo "hello, world!"
-        <-  [
-                [CommandWord('apt-get'), CommandWord('install'), CommandWord('python3-pip')],
-                [CommandWord('echo'), CommandWord('hello, world!')]
-            ]
-        ->  echo 'ab\"cd' && echo "ab\"cd"
-        <-  [
-                [CommandWord('echo'), CommandWord('ab\\"cd', SINGLE_QUOTED)],
-                [CommandWord('echo'), CommandWord('ab\\"cd', DOUBLE_QUOTED)]
-            ]
-
-        :param commands_str: the shell-form commands string, for example 'apt-get update && apt install gcc'
-        :param context: the context of this instruction. Context can be None.
-        :return: List of commands. A command is a list of CommandWords.
-        """
-        # Handling shell-form
-        commands_str_split_words = []
-
-        # - Handling quotes and brackets
-        i = 0
-        content_outside_quote = ''
-        while i < len(commands_str):
-            if commands_str[i] == "'":
-                matched_quote = commands_str.find("'", i + 1)    # Find matched quote
-                if matched_quote == -1:
-                    logging.error('Illegal RUN command: "{0}"'.format(commands_str))
-                    raise handle_error.HandleError()
-
-                # Remove brackets directly, because we don't care about the order of evaluation
-                content_outside_quote = self._remove_brackets(content_outside_quote)
-                content_outside_quote = utils.substitute_env(content_outside_quote, context)
-                commands_str_split_words.extend([
-                    CommandWord(word) for word in content_outside_quote.split()
-                ])
-                content_outside_quote = ''
-
-                content_inside_quote = commands_str[i + 1: matched_quote]
-                commands_str_split_words.append(CommandWord(content_inside_quote, CommandWord.SINGLE_QUOTED))
-                i = matched_quote
-            elif commands_str[i] == '"':
-                j = i + 1
-                while True:
-                    matched_quote = commands_str.find('"', j)  # Find matched quote
-                    if matched_quote == -1:
-                        logging.error('Illegal RUN command: "{0}"'.format(commands_str))
-                        raise handle_error.HandleError()
-                    if commands_str[matched_quote - 1] != '\\':
-                        break
-                    else:
-                        j = matched_quote + 1
-
-                content_outside_quote = self._remove_brackets(content_outside_quote)
-                content_outside_quote = utils.substitute_env(content_outside_quote, context)
-                commands_str_split_words.extend([
-                    CommandWord(word) for word in content_outside_quote.split()
-                ])
-                content_outside_quote = ''
-
-                content_inside_quote = commands_str[i + 1: matched_quote]
-                content_inside_quote = utils.substitute_env(content_inside_quote, context)
-                commands_str_split_words.append(CommandWord(content_inside_quote, CommandWord.DOUBLE_QUOTED))
-                i = matched_quote
-            else:
-                content_outside_quote += commands_str[i]
-            i += 1
-        if len(content_outside_quote) > 0:
-            content_outside_quote = self._remove_brackets(content_outside_quote)
-            content_outside_quote = utils.substitute_env(content_outside_quote, context)
-            commands_str_split_words.extend([
-                CommandWord(word) for word in content_outside_quote.split()
-            ])
-
-        # - Separate multiple commands in commands_str, for example 'a && b || c'
-        commands = []
-        command_words = []
-        for command_word in commands_str_split_words:
-            word = command_word.s
-            # Greedy strategy: All commands (whether or not they will be executed at runtime) are considered.
-            if word == '&&' or word == ';' or word == '||':  # TODO: Consider > and |
-                # We do not care if some commands are surrounded by brackets
-                commands.append(command_words)
-                command_words = []
-            else:
-                command_words.append(command_word)
-        if len(command_words) > 0:
-            commands.append(command_words)
-        return commands
-
-    def _handle_bash_c(self, commands: list, context) -> list:
+    @staticmethod
+    def _handle_bash_c(commands: list, context) -> list:
         """
         Detect and process the '/bin/bash -c "command"' situation.
         Each command of commands will be processed.
@@ -224,12 +131,10 @@ class RunHandler(object):
                 command_word = command_words[i]
                 if command_word.s == '-c' and i < len(command_words) - 1:
                     real_commands_str = command_words[i + 1].s
-                    real_commands_words = self._process_shell_form(real_commands_str, context)
+                    real_commands_words, _ = shell_util.process_shell_form(real_commands_str, context)
                     new_commands.extend(real_commands_words)
                     break
         return new_commands
-
-    # --------------------- Handling executables ---------------------
 
     def _handle_useradd(self, command: list):
         """
@@ -291,3 +196,20 @@ class RunHandler(object):
             else:
                 real_user_home = '/root/'
         self.global_status.user_dirs[user_name] = real_user_home
+
+    @staticmethod
+    def _need_remove_anti_cache_commands(command: list):
+        """
+        Check if this command is an anti-cache command.
+        :param command: the command to check.
+        :return: True if this command is an anti-cache command, or else False.
+        """
+        # Case for removing anti-cache commands
+        for command_regex_anti_cache in optimization_config.global_opt_settings.anti_cache_commands_regex:
+            anti_cache_re = re.compile(command_regex_anti_cache)
+            command_str = str_util.join_command_words(command)
+            match_result = anti_cache_re.match(command_str)
+            if match_result:
+                return True
+        return False
+

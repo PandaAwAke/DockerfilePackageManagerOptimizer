@@ -2,7 +2,8 @@ import unittest
 
 from dockerfile_parse import DockerfileParser
 
-import config
+from config import engine_config
+from config.optimization_config import load_optimization_settings
 from model import handle_error
 from pipeline.stage_optimizer import StageOptimizer
 from pipeline.stage_simulator import StageSimulator
@@ -12,7 +13,8 @@ class TestAll(unittest.TestCase):
 
     def setUp(self):
         self.parser = DockerfileParser('tmp')
-        config.global_settings.pm_settings_path = '../resources/PMSettings.yaml'
+        engine_config.global_settings.pm_settings_path = '../resources/settings.yaml'
+        load_optimization_settings()
 
     def _lines_wrapper(self, lines: list) -> tuple:
         self.parser.lines = [line + '\n' for line in lines]
@@ -25,7 +27,7 @@ class TestAll(unittest.TestCase):
         try:
             _simulator = StageSimulator(stage)
             _simulator.simulate()
-            _optimizer = StageOptimizer(stage)
+            _optimizer = StageOptimizer(stage, self.parser.lines)
             new_stage_lines = _optimizer.optimize(_simulator.get_optimization_strategies())
         except handle_error.HandleError as e:
             print('A handle error was raised')
@@ -86,6 +88,23 @@ class TestAll(unittest.TestCase):
             '> /etc/apt/apt.conf.d/keep-cache\n',
             'RUN --mount=type=cache,target=/var/lib/apt --mount=type=cache,target=/var/cache/apt apt update\n',
             'RUN --mount=type=cache,target=/var/cache/apt --mount=type=cache,target=${dir} apt-get install\n'
+        ])
+
+    def test_anti_cache(self):
+        lines = [
+            'RUN rm -rf /var/lib/apt/lists/*',
+            'RUN rm -rf /var/lib/apt/lists/* && apt-get update',
+            'RUN echo 3 && rm -rf /var/lib/apt/lists/* || echo 5',
+            'RUN echo 3 && \\\n rm -rf /var/lib/apt/lists/*  ',
+            'RUN --mount=type=cache,target=/var/lib/apt rm -rf /var/lib/apt/lists/* && apt-get install || rm -rf /var/cache/apt/*'
+        ]
+        result = self._execute_one_stage(lines)
+        self.assertEqual(result, [
+            'RUN rm -f /etc/apt/apt.conf.d/docker-clean; echo \'Binary::apt::APT::Keep-Downloaded-Packages "true";\' > /etc/apt/apt.conf.d/keep-cache\n',
+            'RUN --mount=type=cache,target=/var/lib/apt --mount=type=cache,target=/var/cache/apt apt-get update',
+            'RUN echo 3 && echo 5',
+            'RUN echo 3',
+            'RUN --mount=type=cache,target=/var/cache/apt --mount=type=cache,target=/var/lib/apt apt-get install'
         ])
 
 

@@ -1,5 +1,10 @@
+import logging
+
 import dockerfile_parse.util
+
+from model import handle_error
 from model.global_status import GlobalStatus
+from util import str_util
 
 
 def replace_home_char(path: str, global_status: GlobalStatus) -> str:
@@ -47,3 +52,32 @@ def substitute_env(s: str, context) -> str:
         s = s.replace('${' + key + '}', value)
         s = s.replace('$' + key, value)
     return s
+
+
+def get_mount_target_dirs(instruction, context) -> list:
+    run_options_str, _ = str_util.separate_run_options(instruction['value'])
+    run_options_str += ' '  # This operation is meaningless, just to make the code simpler
+    find_index: int = 0
+    find_index = run_options_str.find('--mount=type=cache', find_index)
+    existing_target_dirs = []
+    while find_index != -1:
+        target_dir_index = run_options_str.find('target=', find_index)
+        if target_dir_index == -1:
+            logging.error('Cannot find the target directory in existing --mount=type=cache RUN instruction: '
+                          '"{0}"'.format(instruction['content']))
+            raise handle_error.HandleError()
+
+        # Get target_dir
+        space_index = run_options_str.find(' ', target_dir_index)
+        if space_index == -1:
+            logging.error('Illegal --mount=type=cache instruction format: '
+                          '"{0}"'.format(instruction['content']))
+            raise handle_error.HandleError()
+        target_dir = run_options_str[target_dir_index + len('target='):space_index]
+        target_dir = substitute_env(target_dir, context)
+        existing_target_dirs.append(target_dir)
+
+        find_index = run_options_str.find('--mount=type=cache', find_index + len('--mount=type=cache'))
+
+    return existing_target_dirs
+

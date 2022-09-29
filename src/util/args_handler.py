@@ -1,7 +1,7 @@
 import getopt
 import logging
 
-from config import engine_settings
+from config.engine_config import engine_settings
 
 
 def print_usage():
@@ -26,7 +26,7 @@ Options:
 
 def init_by_argv(argv):
     """
-    Parse the command-line arguments, and then set the engine settings (in config.py).
+    Parse the command-line arguments, and then set the engine settings (in engine_config.py).
 
     :param argv: command-line arguments (sys.argv[1:])
     :return: None
@@ -71,3 +71,4 @@ def init_by_argv(argv):
         format='[%(asctime)s %(levelname)s %(name)s]: %(message)s',
         level=engine_settings.logging_level
     )
+

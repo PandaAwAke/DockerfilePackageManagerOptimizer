@@ -19,6 +19,8 @@ class TestDockerfileParser(unittest.TestCase):
             parser = DockerfileParser(fileobj=f)
             s = parser.structure
             print(s)
+            s = parser.lines
+            print(s)
         with open('dockerfiles/Dockerfile.write', 'wb') as f:
             parser = DockerfileParser(fileobj=f)
             parser.lines = [

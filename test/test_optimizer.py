@@ -3,8 +3,8 @@ import unittest
 from dockerfile_parse import DockerfileParser
 
 from model import handle_error
-from pipeline import stage_optimizer
 from model.optimization_strategy import *
+from pipeline import stage_optimizer
 
 
 class TestOptimizer(unittest.TestCase):
@@ -24,7 +24,7 @@ class TestOptimizer(unittest.TestCase):
                 'RUN --mount=type=cache,target useradd -d /home/panda panda && usermod -d /home/root root'
             ]
             strategy = AddCacheStrategy(0, ['/root'])
-            print(stage_optimizer.StageOptimizer(self._lines_wrapper(lines)).optimize([strategy]))
+            print(stage_optimizer.StageOptimizer(self._lines_wrapper(lines), self.parser.lines).optimize([strategy]))
         except handle_error.HandleError as e:
             print('You will see this')
             return

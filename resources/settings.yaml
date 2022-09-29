@@ -29,8 +29,6 @@ packageManagers:
       - /var/cache/apt
     additional-pre-commands:
       - rm -f /etc/apt/apt.conf.d/docker-clean; echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache
-    anti-cache-commands-regex:
-      - ^rm\s+
 
   go:
     executables:
@@ -42,3 +40,6 @@ packageManagers:
     default-cache-dirs:
       - ~/.cache/go-build
 
+anti-cache-commands-regex:
+  - ^rm\s+-r\S*\s+/var/lib/apt[\S\s]*$
+  - ^rm\s+-r\S*\s+/var/cache/apt[\S\s]*$
