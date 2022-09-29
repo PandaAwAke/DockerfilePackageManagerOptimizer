@@ -132,6 +132,9 @@ def _test_one_dockerfile(context_path, input_file, f_output, f_timeout_output, t
         logging.info('"{0}" timed out.'.format(input_file))
         f_timeout_output.write(input_file + '\n')
 
+    f_output.flush()
+    f_timeout_output.flush()
+
 
 if __name__ == '__main__':
     argv = sys.argv
