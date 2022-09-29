@@ -43,5 +43,5 @@ python src/main.py -o ./new_dockerfiles ./dockerfiles/	# ./new_dockerfiles/ has 
 * Find a better place to insert the additional commands
 * Parse shell scripts
 * More support for cache directory modification
-* Support removing cache-disable commands (such as rm -r /var/lib/apt)
+* ~~Support removing cache-disable commands (such as rm -r /var/lib/apt)~~
 * Support subdirectory path detection
