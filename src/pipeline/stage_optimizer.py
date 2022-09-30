@@ -66,7 +66,7 @@ class StageOptimizer(object):
                     elif isinstance(strategy, InsertBeforeStrategy):
                         self._optimize_insert_before(strategy=strategy, pre_instruction=pre_instruction)
                     elif isinstance(strategy, RemoveCommandStrategy):
-                        self._optimize_remove_command(strategy=strategy, instruction=instruction, context=context)
+                        self._optimize_remove_command(strategy=strategy, instruction=instruction)
 
                 # Some operations may cause empty lines, this is to remove empty instructions
                 if instruction['content'].strip() != instruction['instruction']:
@@ -128,7 +128,7 @@ class StageOptimizer(object):
                 self.new_stage_lines.append('RUN ' + command_insert + '\n')
                 stats.insert_before()    # Stats
     
-    def _optimize_remove_command(self, strategy: RemoveCommandStrategy, instruction: dict, context):
+    def _optimize_remove_command(self, strategy: RemoveCommandStrategy, instruction: dict):
         """
         Apply the RemoveCommandStrategy for the instruction.
 
@@ -136,14 +136,13 @@ class StageOptimizer(object):
         :param instruction: the instruction to optimize.
         :return: None
         """
-        # TODO: finish this
         assert instruction['instruction'] == 'RUN'
 
         # Parse the commands string again
         instruction_type, instruction_body = str_util.separate_instruction_type_body(instruction['content'])
         instruction_options, instruction_body = str_util.separate_run_options(instruction_body)
 
-        commands, connectors = shell_util.process_shell_form_str(instruction_body, context)
+        commands, connectors = shell_util.process_shell_form_str(instruction_body)
         if len(connectors) != len(commands) - 1:
             assert len(connectors) == len(commands) - 1
 
@@ -171,4 +170,4 @@ class StageOptimizer(object):
             new_content = new_content[:-1].strip()
 
         instruction['content'] = new_content
-
+        stats.remove_command()  # Stats

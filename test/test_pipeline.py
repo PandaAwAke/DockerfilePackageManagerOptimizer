@@ -101,11 +101,9 @@ class TestAll(unittest.TestCase):
         result = self._execute_one_stage(lines)
         self.assertEqual(result, [
             'RUN rm -f /etc/apt/apt.conf.d/docker-clean; echo \'Binary::apt::APT::Keep-Downloaded-Packages "true";\' > /etc/apt/apt.conf.d/keep-cache\n',
-            'RUN --mount=type=cache,target=/var/lib/apt --mount=type=cache,target=/var/cache/apt apt-get update',
-            'RUN echo 3 && echo 5',
-            'RUN echo 3',
-            'RUN --mount=type=cache,target=/var/cache/apt --mount=type=cache,target=/var/lib/apt apt-get install'
-        ])
+            'RUN --mount=type=cache,target=/var/lib/apt --mount=type=cache,target=/var/cache/apt  apt-get update\n',
+            'RUN echo 3  &&  echo 5\n', 'RUN echo 3\n',
+            'RUN --mount=type=cache,target=/var/cache/apt --mount=type=cache,target=/var/lib/apt  apt-get install\n'])
 
 
 if __name__ == '__main__':

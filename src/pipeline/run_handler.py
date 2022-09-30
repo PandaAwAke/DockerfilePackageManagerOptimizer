@@ -43,8 +43,10 @@ class RunHandler(object):
         """
         # Pay attention to RUN options, such as RUN --mount, this should be ignored
         _, commands_str = str_util.separate_run_options(commands_str)
-        commands = self._process_exec_form(commands_str)
-        if commands is None:
+
+        if shell_util.is_exec_form(commands_str):
+            commands = self._process_exec_form(commands_str)
+        else:
             commands, _ = shell_util.process_shell_form(commands_str, context)
         commands = self._handle_bash_c(commands, context)
 

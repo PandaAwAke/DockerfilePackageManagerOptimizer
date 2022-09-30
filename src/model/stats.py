@@ -7,10 +7,12 @@ class Stats(object):
         self.add_cache_num = 0
         self.insert_before_num = 0
         self.syntax_change_num = 0
+        self.remove_command_num = 0
 
         self.total_add_cache_num = 0
         self.total_insert_before_num = 0
         self.total_syntax_change_num = 0
+        self.total_remove_command_num = 0
 
     def one_file_str(self):
         """
@@ -22,10 +24,13 @@ class Stats(object):
         return 'Number of modifications of this dockerfile: {0}\n' \
                ' - Added --mount=type=cache: {1}\n' \
                ' - Inserted commands: {2}\n' \
-               ' - Added/Modified syntax settings: {3}\n' \
-            .format(self.add_cache_num + self.insert_before_num + self.syntax_change_num,
+               ' - Removed anti-cache commands: {3}\n' \
+               ' - Added/Modified syntax settings: {4}\n' \
+            .format(self.add_cache_num + self.insert_before_num
+                    + self.remove_command_num + self.syntax_change_num,
                     self.add_cache_num,
                     self.insert_before_num,
+                    self.remove_command_num,
                     self.syntax_change_num)
 
     def total_str(self):
@@ -38,10 +43,13 @@ class Stats(object):
         return 'Total number of modifications: {0}\n' \
                ' - Added --mount=type=cache: {1}\n' \
                ' - Inserted commands: {2}\n' \
-               ' - Added/Modified syntax settings: {3}\n' \
-            .format(self.total_add_cache_num + self.total_insert_before_num + self.total_syntax_change_num,
+               ' - Removed anti-cache commands: {3}\n' \
+               ' - Added/Modified syntax settings: {4}\n' \
+            .format(self.total_add_cache_num + self.total_insert_before_num
+                    + self.total_remove_command_num + self.total_syntax_change_num,
                     self.total_add_cache_num,
                     self.total_insert_before_num,
+                    self.total_remove_command_num,
                     self.total_syntax_change_num)
 
     def clear_one_file(self):
@@ -52,6 +60,7 @@ class Stats(object):
         """
         self.add_cache_num = 0
         self.insert_before_num = 0
+        self.remove_command_num = 0
         self.syntax_change_num = 0
 
     def clear_total(self):
@@ -61,8 +70,10 @@ class Stats(object):
         :return:
         """
         self.clear_one_file()
+
         self.total_add_cache_num = 0
         self.total_insert_before_num = 0
+        self.total_remove_command_num = 0
         self.total_syntax_change_num = 0
 
     def add_cache(self):
@@ -72,6 +83,10 @@ class Stats(object):
     def insert_before(self):
         self.insert_before_num += 1
         self.total_insert_before_num += 1
+
+    def remove_command(self):
+        self.remove_command_num += 1
+        self.total_remove_command_num += 1
 
     def syntax_change(self):
         self.syntax_change_num += 1
