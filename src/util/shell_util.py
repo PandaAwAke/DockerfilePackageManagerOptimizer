@@ -61,7 +61,7 @@ def connect_shell_command_string(commands: list, connectors: list) -> str:
     return commands_str
 
 
-def _process_quotes_and_words(commands_str: str):
+def _process_command_quotes_and_words(commands_str: str):
     """
     Parse the commands_str behind RUN (shell-form).
     All command words inside commands_str (connected with &&, ||, ;, etc) will be returned.
@@ -122,7 +122,7 @@ def _process_quotes_and_words(commands_str: str):
     return commands_str_split_words
 
 
-def process_shell_form_str(commands_str: str):
+def split_command_strings(commands_str: str):
     """
     Preprocess the commands_str behind RUN (shell-form).
     The returned commands will be represented as strings.
@@ -142,7 +142,7 @@ def process_shell_form_str(commands_str: str):
             commands is a list of commands (a command is a list of strings).
             connectors is a list of connectors between commands ('&&', ';', '||').
     """
-    commands_str_split_words = _process_quotes_and_words(commands_str)
+    commands_str_split_words = _process_command_quotes_and_words(commands_str)
 
     # - Separate multiple commands in commands_str, for example 'a && b || c'
     commands = []
@@ -204,7 +204,7 @@ def process_shell_form(commands_str: str, context):
             connectors is a list of connectors between commands ('&&', ';', '||').
     """
 
-    commands_str_split_words = _process_quotes_and_words(commands_str)
+    commands_str_split_words = _process_command_quotes_and_words(commands_str)
 
     # - Separate multiple commands in commands_str, for example 'a && b || c'
     commands = []

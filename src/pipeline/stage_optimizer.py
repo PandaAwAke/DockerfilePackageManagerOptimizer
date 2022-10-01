@@ -142,7 +142,7 @@ class StageOptimizer(object):
         instruction_type, instruction_body = str_util.separate_instruction_type_body(instruction['content'])
         instruction_options, instruction_body = str_util.separate_run_options(instruction_body)
 
-        commands, connectors = shell_util.process_shell_form_str(instruction_body)
+        commands, connectors = shell_util.split_command_strings(instruction_body)
         if len(connectors) != len(commands) - 1:
             assert len(connectors) == len(commands) - 1
 
