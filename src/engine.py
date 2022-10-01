@@ -159,6 +159,7 @@ class Engine(object):
             logging.warning(
                 'Failed to optimize "{0}". The input file is copied.'.format(input_file, output_file))
             engine_settings.fail_fileobj.write(input_file + '\n')
+
             stats.clear_one_file()
             return
 
@@ -167,6 +168,8 @@ class Engine(object):
 
         if engine_settings.show_stats:
             logging.info(stats.one_file_str())
+
+        stats.clear_one_file()
 
     def _optimize_directory(self):
         """
