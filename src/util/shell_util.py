@@ -91,7 +91,8 @@ def _process_quotes_and_words(commands_str: str):
     i = 0
     content_outside_quote = ''
     while i < len(commands_str):
-        if commands_str[i] in ("'", '"'):
+        if commands_str[i] in ("'", '"') and \
+                (i == 0 or (i > 0 and commands_str[i - 1] != '\\')):
             # Find matched quote
             if commands_str[i] == "'":
                 matched_quote = commands_str.find("'", i + 1)
