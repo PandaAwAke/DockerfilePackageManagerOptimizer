@@ -8,6 +8,7 @@ def print_usage():
     usage = """\
 Usage: python main.py [OPTIONS] [INPUT]
 If INPUT is a directory, all files (including subdirectories) in it will be optimized.
+A logging file named 'DPMO.log' will be generated.
 
 Options:
   -h            Display this help message and exit
@@ -16,10 +17,10 @@ Options:
                 If INPUT is a directory, then OUTPUT should be a directory too
   -s SUFFIX     Set the prefix of the output file, default to ".optimized"
                 If INPUT and OUTPUT both are directories, then SUFFIX will be ignored
-  -S            Show the statistics of optimizations
+  -S            Show optimization statistics for each file
   -f FAIL_FILE  Output all dockerfiles that are failed to optimize into FAIL_FILE
                 FAIL_FILE is './DPMO_failures.txt' by default
-  -w            Only display warning and error messages
+  -w            Only show warning and error messages in the console
 """
     print(usage)
 
@@ -67,8 +68,23 @@ def init_by_argv(argv):
         exit(-1)
         return
 
-    logging.basicConfig(
-        format='[%(asctime)s %(levelname)s %(name)s]: %(message)s',
-        level=engine_settings.logging_level
-    )
+    init_logger()
 
+
+def init_logger():
+    logger = logging.getLogger()
+    logger.setLevel(logging.DEBUG)
+
+    # formatter = logging.Formatter('[%(asctime)s - %(levelname)s - %(name)s]: %(message)s')
+    formatter = logging.Formatter('[%(asctime)s - %(levelname)s]: %(message)s')
+
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(formatter)
+    console_handler.setLevel(engine_settings.logging_level)
+
+    file_handler = logging.FileHandler(filename='DPMO.log')
+    file_handler.setFormatter(formatter)
+    file_handler.setLevel(logging.DEBUG)
+
+    logger.addHandler(console_handler)
+    logger.addHandler(file_handler)

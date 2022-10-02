@@ -76,7 +76,7 @@ class Engine(object):
 
         :return: None
         """
-        if os.path.isdir(engine_settings.input_file):
+        if os.path.isdir(engine_settings.input_file):   # Input is a directory
             if engine_settings.output_file is not None:
                 if os.path.exists(engine_settings.output_file) and \
                         not os.path.isdir(engine_settings.output_file):
@@ -85,12 +85,21 @@ class Engine(object):
                     return
                 self._create_output_directory(engine_settings.output_file)
             self._optimize_directory()
-        else:
+        else:       # Input is a file
             if engine_settings.output_file is not None:
-                self._create_output_directory(os.path.dirname(engine_settings.output_file))
-                self._run_one_file(engine_settings.input_file, engine_settings.output_file)
+                if os.path.isdir(engine_settings.output_file):
+                    self._run_one_file(engine_settings.input_file,
+                                       os.path.join(
+                                           engine_settings.output_file,
+                                           os.path.basename(engine_settings.input_file)))
+                else:
+                    self._create_output_directory(os.path.dirname(engine_settings.output_file))
+                    self._run_one_file(engine_settings.input_file, engine_settings.output_file)
             else:
                 self._run_one_file(engine_settings.input_file, engine_settings.input_file + engine_settings.suffix)
+
+        logging.warning(stats.total_str())
+
 
     @staticmethod
     def _run_one_file(input_file: str, output_file: str):
@@ -112,64 +121,71 @@ class Engine(object):
             logging.error(e)
             return
 
+        valid_dockerfile = True
+
         try:
+            logging.info("Optimizing - {0}".format(input_file))
+
             splitter = StageSplitter(dockerfile=dockerfile_in)
             stages = splitter.get_stages()  # list of (instructions, contexts)
             if len(stages) == 0:
-                logging.error('No stage is found in "{0}"! Is it correct?'.format(input_file))
-                return
+                logging.error("Unchanged - {0} - No stage was found! Is it correct?".format(input_file))
+                valid_dockerfile = False
 
             if len(stages[0][0]) == 0:
-                logging.info('Encountered an empty file: "{0}"'.format(input_file))
-                return
+                logging.info("Unchanged - {0} - Encountered an empty file.".format(input_file))
+                valid_dockerfile = False
 
             global_optimizer = GlobalOptimizer()
+
             if not global_optimizer.optimizable(stages):
-                logging.error('"{0}" uses a non-official frontend, I cannot handle this.'.format(input_file))
-                return
+                logging.error("Unchanged - {0} - A non-official frontend was used, I cannot handle this."
+                              .format(input_file))
+                valid_dockerfile = False
 
-            logging.info('Optimizing "{0}" ...'.format(input_file))
+            if valid_dockerfile:
+                new_stages_lines = []
+                total_strategies = 0
+                for stage in stages:  # stage is (instructions, contexts)
+                    _simulator = StageSimulator(stage)
+                    _simulator.simulate()
+                    _optimizer = StageOptimizer(stage, dockerfile_in.lines)
+                    strategies = _simulator.get_optimization_strategies()
+                    total_strategies += len(strategies)
+                    new_stage_lines = _optimizer.optimize(strategies)
+                    new_stages_lines.append(new_stage_lines)
 
-            new_stages_lines = []
-            total_strategies = 0
-            for stage in stages:  # stage is (instructions, contexts)
-                _simulator = StageSimulator(stage)
-                _simulator.simulate()
-                _optimizer = StageOptimizer(stage, dockerfile_in.lines)
-                strategies = _simulator.get_optimization_strategies()
-                total_strategies += len(strategies)
-                new_stage_lines = _optimizer.optimize(strategies)
-                new_stages_lines.append(new_stage_lines)
-
-            if total_strategies > 0:
-                global_optimizer.optimize(stages, new_stages_lines)
-                writer = DockerfileWriter(dockerfile_out)
-                writer.write(new_stages_lines)
-                logging.info('Successfully optimized "{0}" to "{1}".'.format(input_file, output_file))
+                if total_strategies > 0:
+                    global_optimizer.optimize(stages, new_stages_lines)
+                    writer = DockerfileWriter(dockerfile_out)
+                    writer.write(new_stages_lines)
+                    stats.successful_one_file()
+                    logging.info("Successful - {0} - {1}".format(input_file, output_file))
+                else:
+                    # just copy output from input
+                    stats.unchanged_one_file()
+                    logging.info("Unchanged - {0} - Nothing can be optimized.".format(input_file))
+                    f_out.write(f_in.read())
             else:
-                # just copy output from input
-                f_out.write(f_in.read())
-                logging.info('"{0}" has nothing to optimize.'.format(input_file))
+                stats.unchanged_one_file()
 
-        except handle_error.HandleError as e:  # Failed to optimize this dockerfile
+        except handle_error.HandleError as e:  # An error occurred when optimizing this dockerfile
             # just copy output from input
             f_out.write(f_in.read())
-            f_in.close()
-            f_out.close()
+
+            stats.failed_one_file()
             logging.warning(
-                'Failed to optimize "{0}". The input file is copied.'.format(input_file, output_file))
+                "Unchanged - {0} - The input file is copied.".format(input_file, output_file))
             engine_settings.fail_fileobj.write(input_file + '\n')
 
+        finally:
+            f_in.close()
+            f_out.close()
+
+            if engine_settings.show_stats:
+                logging.info(stats.one_file_str())
+
             stats.clear_one_file()
-            return
-
-        f_in.close()
-        f_out.close()
-
-        if engine_settings.show_stats:
-            logging.info(stats.one_file_str())
-
-        stats.clear_one_file()
 
     def _optimize_directory(self):
         """
@@ -196,8 +212,6 @@ class Engine(object):
                                                   os.path.relpath(input_sub_dir, input_dir))
                     if not os.path.exists(output_sub_dir):
                         os.mkdir(output_sub_dir)
-        if engine_settings.show_stats:
-            logging.info(stats.total_str())
 
     def _create_output_directory(self, output_dir):
         """

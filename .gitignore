@@ -5,6 +5,9 @@ test/tmp/
 test_dockerfiles/
 test_dockerfiles_output/
 DPMO_failures.txt
+DPMO.log
+tools/dockerfile_buildable.txt
+tools/dockerfile_buildable_timeout.txt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
