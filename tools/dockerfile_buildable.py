@@ -36,6 +36,7 @@ class Settings(object):
         self.timeout_file = 'dockerfile_buildable_timeout.txt'
         self.timeout = 300
         self.start_file = None
+        self.input_files = None
 
 
 settings = Settings()
@@ -58,6 +59,8 @@ Options:
                     You should set this value when you run this tool for a second time to
                     continue the build testing. You can obtain this value from the output
                     message of the previous running.
+-i  INPUT_FILES     Describe all dockerfiles which will be tested. Every line inside it should
+                    be the filepath of a dockerfile. If specified, INPUT_DIR will be ignored.
 
 The name of built image will be set to "dpmo_test_dockerfiles:buildable".
 
@@ -75,7 +78,7 @@ def _handle_argv(argv):
     :return: None
     """
     try:
-        opts, args = getopt.getopt(argv, 'o:f:t:s:')
+        opts, args = getopt.getopt(argv, 'o:f:t:s:i:')
     except getopt.GetoptError as e:
         logging.error('Invalid option: "{0}"'.format(e.opt))
         exit(-1)
@@ -93,9 +96,11 @@ def _handle_argv(argv):
         elif option == '-f':
             settings.timeout_file = value
         elif option == '-t':
-            settings.timeout = value
+            settings.timeout = int(value)
         elif option == '-s':
             settings.start_file = value
+        elif option == '-i':
+            settings.input_files = value
 
 
 def _test_one_dockerfile(context_path, input_file, f_output, f_timeout_output, timeout):
@@ -150,21 +155,40 @@ if __name__ == '__main__':
     )
 
     mode = 'w' if settings.start_file is None else 'a'
-    before_start_file = True
+    start_testing = False if settings.start_file else True
 
     with open(settings.output_file, mode) as f_output:
         with open(settings.timeout_file, mode) as f_timeout_output:
-            for current_dir, dirs, files in os.walk(settings.input_dir):
-                for f in files:
-                    input_file = os.path.join(current_dir, f)
-                    if settings.start_file is not None and before_start_file:
-                        if input_file == settings.start_file:
-                            before_start_file = False
-                    else:
-                        _test_one_dockerfile(
-                            context_path=settings.input_dir,
-                            input_file=input_file,
-                            f_output=f_output,
-                            f_timeout_output=f_timeout_output,
-                            timeout=settings.timeout
-                        )
+            if settings.input_files is None:
+                for current_dir, dirs, files in os.walk(settings.input_dir):
+                    for f in files:
+                        input_file = os.path.join(current_dir, f)
+
+                        if input_file == settings.start_file.strip():
+                            start_testing = True
+
+                        if start_testing:
+                            _test_one_dockerfile(
+                                context_path=settings.input_dir,
+                                input_file=input_file,
+                                f_output=f_output,
+                                f_timeout_output=f_timeout_output,
+                                timeout=settings.timeout
+                            )
+            else:
+                with open(settings.input_files, 'r') as f_input_files:
+                    for line in f_input_files.readlines():
+                        input_file = line.strip()
+
+                        if input_file == settings.start_file.strip():
+                            start_testing = True
+
+                        if start_testing:
+                            _test_one_dockerfile(
+                                context_path=settings.input_dir,
+                                input_file=input_file,
+                                f_output=f_output,
+                                f_timeout_output=f_timeout_output,
+                                timeout=settings.timeout
+                            )
+
