@@ -137,11 +137,11 @@ class Engine(object):
                 valid_dockerfile = False
 
             global_optimizer = GlobalOptimizer()
-
-            if not global_optimizer.optimizable(stages):
-                logging.error("Unchanged - {0} - A non-official frontend was used, I cannot handle this."
-                              .format(input_file))
-                valid_dockerfile = False
+            if valid_dockerfile:
+                if not global_optimizer.optimizable(stages):
+                    logging.error("Unchanged - {0} - A non-official frontend was used, I cannot handle this."
+                                  .format(input_file))
+                    valid_dockerfile = False
 
             if valid_dockerfile:
                 new_stages_lines = []

@@ -102,6 +102,7 @@ The brief workflow is depicted in the figure:
 
 ## Things to do next:
 
+* ~~Better place to InsertBefore~~
 * Parse shell scripts
 * More support for cache directory modification
 * ~~Support removing cache-disable commands (such as rm -r /var/lib/apt)~~

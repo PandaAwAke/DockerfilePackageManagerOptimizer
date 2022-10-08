@@ -19,6 +19,7 @@ import os
 import platform
 import subprocess
 import sys
+import time
 
 """
 A tool for testing whether a directory of dockerfiles can be built successfully (without build context).
@@ -118,7 +119,7 @@ def _test_one_dockerfile(context_path, input_file, f_output, f_timeout_output, t
     command = [
         'docker', 'build',
         '-f', input_file,
-        '-t', 'dpmo_test_dockerfiles:buildable',
+        '-t', '{}:{}'.format(os.path.basename(input_file).replace('.Dockerfile', ''), str(round(time.time()))),
         context_path
     ]
     if platform.system() != 'Windows':
@@ -134,6 +135,7 @@ def _test_one_dockerfile(context_path, input_file, f_output, f_timeout_output, t
         else:
             logging.info('"{0}" failed to built.'.format(input_file))
     except subprocess.TimeoutExpired as e:
+        proc.kill()
         logging.info('"{0}" timed out.'.format(input_file))
         f_timeout_output.write(input_file + '\n')
 
@@ -155,16 +157,17 @@ if __name__ == '__main__':
     )
 
     mode = 'w' if settings.start_file is None else 'a'
-    start_testing = False if settings.start_file else True
+    start_testing = False
+    start_time = time.time()
 
-    with open(settings.output_file, mode) as f_output:
-        with open(settings.timeout_file, mode) as f_timeout_output:
+    with open(settings.output_file, mode, encoding='utf-8') as f_output:
+        with open(settings.timeout_file, mode, encoding='utf-8') as f_timeout_output:
             if settings.input_files is None:
                 for current_dir, dirs, files in os.walk(settings.input_dir):
                     for f in files:
                         input_file = os.path.join(current_dir, f)
 
-                        if input_file == settings.start_file.strip():
+                        if settings.start_file is None or input_file == settings.start_file.strip():
                             start_testing = True
 
                         if start_testing:
@@ -176,11 +179,11 @@ if __name__ == '__main__':
                                 timeout=settings.timeout
                             )
             else:
-                with open(settings.input_files, 'r') as f_input_files:
+                with open(settings.input_files, 'r', encoding='utf-8') as f_input_files:
                     for line in f_input_files.readlines():
                         input_file = line.strip()
 
-                        if input_file == settings.start_file.strip():
+                        if settings.start_file is None or input_file == settings.start_file.strip():
                             start_testing = True
 
                         if start_testing:
@@ -192,3 +195,5 @@ if __name__ == '__main__':
                                 timeout=settings.timeout
                             )
 
+    end_time = time.time()
+    logging.warning("Seconds used: {}".format(end_time - start_time))

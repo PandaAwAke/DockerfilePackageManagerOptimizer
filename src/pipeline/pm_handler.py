@@ -42,13 +42,9 @@ class PMHandler(object):
         :return: None
         """
 
-        class OptimizationKinds:
-            def __init__(self):
-                self.need_add_cache = False
-
         # Key: pm_name, Value: [NeedAddCache(bool), NeedRemoveCommand(bool)]
         # For example: {"npm": [True, False]}
-        optimization_dict = {}
+        add_cache_pm_names = []
 
         # -------------------- Handling PM-related commands --------------------
         for command_index in range(len(commands)):
@@ -95,47 +91,36 @@ class PMHandler(object):
                 match_result = run_re.match(pm_command_str)
                 # Only considering one match
                 if match_result:
-                    if optimization_dict.get(pm_name) is None:
-                        optimization_dict[pm_name] = OptimizationKinds()
-                    optimization_dict[pm_name].need_add_cache = True
+                    if add_cache_pm_names.count(pm_name) == 0:
+                        add_cache_pm_names.append(pm_name)
 
             # Case for removing anti-cache commands: in RunHandler
 
-        # -------------------- Generating optimization strategies --------------------
-        # ** Note: Don't generate duplicated strategies for a single instruction including multiple commands!
-        insert_before_strategy = None
-        add_cache_strategy = None
-
-        for pm_name in optimization_dict.keys():
-            pm_setting: PMSetting
-            pm_status: PMHandler.PMStatus
-
-            pm_setting = pm_settings[pm_name]
-            pm_status = self.pm_statuses[pm_name]
-
-            # Generate optimization strategies
             # --------------- Try to generate InsertBeforeStrategy ---------------
             # Note: additional_pre_commands are only added once in a stage!
             #   This means that multiple apt-get instructions will result in only once command addition
-            if len(pm_setting.additional_pre_commands) > 0 and \
-                    not pm_status.pre_commands_added:
-                if insert_before_strategy is None:
-                    insert_before_strategy = InsertBeforeStrategy(instruction_index, [])
+            if len(pm_setting.additional_pre_commands) > 0 and not pm_status.pre_commands_added:
+                insert_before_strategy = InsertBeforeStrategy(instruction_index, [])
                 for additional_pre_command in pm_setting.additional_pre_commands:
                     if additional_pre_command not in insert_before_strategy.commands_insert:
                         insert_before_strategy.commands_insert.append(additional_pre_command)
+                self.optimization_strategies.append(insert_before_strategy)
                 pm_status.pre_commands_added = True
 
-            # --------------- Generate AddCacheStrategy ---------------
-            if optimization_dict[pm_name].need_add_cache:
-                if add_cache_strategy is None:
-                    add_cache_strategy = AddCacheStrategy(instruction_index, [])
-                for cache_dir in pm_status.cache_dirs:
-                    if cache_dir not in add_cache_strategy.cache_dirs:
-                        add_cache_strategy.cache_dirs.append(cache_dir)
+        # -------------------- Generating optimization strategies --------------------
+        # ** Note: Don't generate duplicated strategies for a single instruction including multiple commands!
+        add_cache_strategy = None
 
-        if insert_before_strategy:
-            self.optimization_strategies.append(insert_before_strategy)
+        for pm_name in add_cache_pm_names:
+            pm_status: PMHandler.PMStatus = self.pm_statuses[pm_name]
+
+            # --------------- Generate AddCacheStrategy ---------------
+            if add_cache_strategy is None:
+                add_cache_strategy = AddCacheStrategy(instruction_index, [])
+            for cache_dir in pm_status.cache_dirs:
+                if cache_dir not in add_cache_strategy.cache_dirs:
+                    add_cache_strategy.cache_dirs.append(cache_dir)
+
         if add_cache_strategy:
             self.optimization_strategies.append(add_cache_strategy)
 
