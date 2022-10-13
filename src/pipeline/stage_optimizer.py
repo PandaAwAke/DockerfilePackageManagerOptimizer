@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-
+from config.engine_config import engine_settings
 from model.optimization_strategy import *
 from model.stats import stats
 from util import str_util, context_util, shell_util
@@ -143,8 +143,7 @@ class StageOptimizer(object):
         instruction_options, instruction_body = str_util.separate_run_options(instruction_body)
 
         commands, connectors = shell_util.split_command_strings(instruction_body)
-        if len(connectors) != len(commands) - 1:
-            assert len(connectors) == len(commands) - 1
+        assert len(connectors) == len(commands) - 1
 
         # Remove the specified command, and the connector behind it
         new_commands, new_connectors = [], []
@@ -152,12 +151,18 @@ class StageOptimizer(object):
             if index not in strategy.remove_command_indices:
                 new_commands.append(commands[index])
                 new_connectors.append(connectors[index])
+            elif engine_settings.remove_command_with_true:
+                new_commands.append('true')
+                new_connectors.append(connectors[index])
 
         # If the last command needs to be removed, then remove the connector before it
         if len(commands) - 1 in strategy.remove_command_indices:
             # Maybe anti-cache command is the only command in the instruction
-            if len(new_connectors) > 0:
-                new_connectors.pop()
+            if engine_settings.remove_command_with_true:
+                new_commands.append('true')
+            else:
+                if len(new_connectors) > 0:
+                    new_connectors.pop()
         else:
             new_commands.append(commands[-1])
 

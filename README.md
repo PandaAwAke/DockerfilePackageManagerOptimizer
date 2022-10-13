@@ -15,13 +15,16 @@ Options:
   -h            Display this help message and exit
   -o OUTPUT     Optimized output dockerfile path, default to INPUT + SUFFIX
                 (SUFFIX is ".optimized" by default, so this will be "INPUT.optimized" by default)
-                If INPUT is a directory, then OUTPUT would be a directory too
+                If INPUT is a directory, then OUTPUT should be a directory too
   -s SUFFIX     Set the prefix of the output file, default to ".optimized"
                 If INPUT and OUTPUT both are directories, then SUFFIX will be ignored
   -S            Show optimization statistics for each file
   -f FAIL_FILE  Output all dockerfiles that are failed to optimize into FAIL_FILE
                 FAIL_FILE is './DPMO_failures.txt' by default
   -w            Only show warning and error messages in the console
+  -t            Substitute the commands to remove with true when optimizing. If not specified,
+                DPMO will remove the command (and the connector after it if the connector exists)
+                when optimizing.
 ```
 
 

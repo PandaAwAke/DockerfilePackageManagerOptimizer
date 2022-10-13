@@ -21,6 +21,9 @@ Options:
   -f FAIL_FILE  Output all dockerfiles that are failed to optimize into FAIL_FILE
                 FAIL_FILE is './DPMO_failures.txt' by default
   -w            Only show warning and error messages in the console
+  -t            Substitute the commands to remove with true when optimizing. If not specified,
+                DPMO will remove the command (and the connector after it if the connector exists)
+                when optimizing.
 """
     print(usage)
 
@@ -33,7 +36,7 @@ def init_by_argv(argv):
     :return: None
     """
     try:
-        opts, args = getopt.getopt(argv, 'ho:s:Sf:w')
+        opts, args = getopt.getopt(argv, 'ho:s:Sf:wt')
     except getopt.GetoptError as e:
         logging.error('Invalid option: "{0}"'.format(e.opt))
         exit(-1)
@@ -60,6 +63,8 @@ def init_by_argv(argv):
             engine_settings.fail_file = value
         elif option == '-w':
             engine_settings.logging_level = logging.WARNING
+        elif option == '-t':
+            engine_settings.remove_command_with_true = True
 
     try:
         engine_settings.fail_fileobj = open(file=engine_settings.fail_file, mode='w')

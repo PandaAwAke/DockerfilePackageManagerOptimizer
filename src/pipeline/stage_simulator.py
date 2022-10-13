@@ -22,7 +22,6 @@ class StageSimulator(object):
         self.optimization_strategies = []
         self.run_handler = RunHandler(self.global_status, self.optimization_strategies)
 
-
     def simulate(self, start_instruction_index=0, end_instruction_index=-1):
         """
         Simulate the instructions of the stage.
