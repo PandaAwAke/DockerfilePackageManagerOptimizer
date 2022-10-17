@@ -67,6 +67,8 @@ class StageOptimizer(object):
                         self._optimize_insert_before(strategy=strategy, pre_instruction=pre_instruction)
                     elif isinstance(strategy, RemoveCommandStrategy):
                         self._optimize_remove_command(strategy=strategy, instruction=instruction)
+                    elif isinstance(strategy, RemoveOptionStrategy):
+                        self._optimize_remove_option(strategy=strategy, instruction=instruction)
 
                 # Some operations may cause empty lines, this is to remove empty instructions
                 if instruction['content'].strip() != instruction['instruction']:
@@ -169,6 +171,42 @@ class StageOptimizer(object):
         new_content = (instruction_type + " " +
                        (instruction_options + " " if instruction_options != "" else "") +
                        shell_util.connect_shell_command_string(new_commands, new_connectors)).strip()
+
+        # Be careful of the line_continue_char
+        while new_content.endswith('\\'):
+            new_content = new_content[:-1].strip()
+
+        instruction['content'] = new_content
+        stats.remove_command()  # Stats
+
+    def _optimize_remove_option(self, strategy: RemoveOptionStrategy, instruction: dict):
+        """
+        Apply the RemoveCommandStrategy for the instruction.
+
+        :param strategy: the RemoveCommandStrategy.
+        :param instruction: the instruction to optimize.
+        :return: None
+        """
+        assert instruction['instruction'] == 'RUN'
+
+        # Parse the commands string again
+        instruction_type, instruction_body = str_util.separate_instruction_type_body(instruction['content'])
+        instruction_options, instruction_body = str_util.separate_run_options(instruction_body)
+
+        commands, connectors = shell_util.split_command_strings(instruction_body)
+        assert len(connectors) == len(commands) - 1
+
+        for command_index in range(len(commands)):
+            if command_index != strategy.command_index:
+                continue
+            for option in sorted(strategy.remove_options, reverse=True):
+                commands[command_index] = commands[command_index].replace(' ' + option, '')
+            if len(commands[command_index].strip()) == 0:
+                commands[command_index] = ' true '
+
+        new_content = (instruction_type + " " +
+                       (instruction_options + " " if instruction_options != "" else "") +
+                       shell_util.connect_shell_command_string(commands, connectors)).strip()
 
         # Be careful of the line_continue_char
         while new_content.endswith('\\'):

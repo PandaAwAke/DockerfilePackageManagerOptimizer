@@ -74,3 +74,21 @@ class RemoveCommandStrategy(OptimizationStrategy):
         """
         super().__init__(instruction_index=instruction_index)
         self.remove_command_indices = remove_command_indices
+
+
+class RemoveOptionStrategy(OptimizationStrategy):
+    """
+    The "Remove-Option" optimization strategy for an instruction.
+    """
+
+    def __init__(self, instruction_index: int, command_index: int, remove_options: list):
+        """
+        Initialize the strategy.
+
+        :param instruction_index: the index of the instruction.
+        :param remove_options: the options need to be removed in this instruction.
+        """
+        super().__init__(instruction_index=instruction_index)
+        self.command_index = command_index
+        self.remove_options = remove_options
+

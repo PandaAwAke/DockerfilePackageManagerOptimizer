@@ -14,7 +14,8 @@ class PMSetting(object):
                  commands_regex_run: list,
                  default_cache_dirs: list,
                  commands_regex_modify_cache_dir: list = None,
-                 additional_pre_commands: list = None):
+                 additional_pre_commands: list = None,
+                 anti_cache_options: list = None):
         """
         Initialize the PM's settings.
 
@@ -25,12 +26,14 @@ class PMSetting(object):
         :param commands_regex_modify_cache_dir: (Nullable) the regular expressions for modifying the
                 PM cache directories commands. Group 1 of the regex is the new filepath.
         :param additional_pre_commands: (Nullable) the commands need to be added before all this PM related commands.
+        :param anti_cache_options: (Nullable) the anti-cache options need to be removed in PM related commands.
         """
         self.executables = executables
         self.commands_regex_run = commands_regex_run
         self.default_cache_dirs = default_cache_dirs
         self.commands_regex_modify_cache_dir = commands_regex_modify_cache_dir
         self.additional_pre_commands = additional_pre_commands
+        self.anti_cache_options = anti_cache_options
 
 
 class GlobalOptimizationSettings(object):
@@ -79,6 +82,7 @@ def load_optimization_settings():
             default_cache_dirs=pm_yaml_dict.get('default-cache-dirs') or [],
             commands_regex_modify_cache_dir=pm_yaml_dict.get('commands-regex-modify-cache-dir') or [],
             additional_pre_commands=pm_yaml_dict.get('additional-pre-commands') or [],
+            anti_cache_options=pm_yaml_dict.get('anti-cache-options') or [],
         )
 
         if len(pm_setting.commands_regex_run) == 0:

@@ -102,7 +102,7 @@ class TestAll(unittest.TestCase):
         self.assertEqual(result, [
             'RUN rm -f /etc/apt/apt.conf.d/docker-clean; echo \'Binary::apt::APT::Keep-Downloaded-Packages "true";\' > /etc/apt/apt.conf.d/keep-cache\n',
             'RUN --mount=type=cache,target=/var/lib/apt --mount=type=cache,target=/var/cache/apt  apt-get update\n',
-            'RUN echo 3  &&  echo 5\n', 'RUN echo 3\n',
+            'RUN echo 3 && echo 5\n', 'RUN echo 3\n',
             'RUN --mount=type=cache,target=/var/cache/apt --mount=type=cache,target=/var/lib/apt  apt-get install\n'])
 
     def test_modify_cache_dir(self):
@@ -125,6 +125,20 @@ class TestAll(unittest.TestCase):
             'RUN --mount=type=cache,target=/home/panda/.cache/pip pip install pandas\n',
             'RUN mkdir /root/.npm-global && npm config set prefix "/root/.npm-global"\n',
             'RUN --mount=type=cache,target=/root/.npm-global npm install\n'
+        ])
+
+
+    def test_remove_anti_cache_options(self):
+        lines = [
+            'RUN pip --no-cache-dir install',
+            'RUN pip --no-cache install',
+            'RUN pip --no-cache-dir --no-cache install',
+        ]
+        result = self._execute_one_stage(lines)
+        self.assertEqual(result, [
+            'RUN --mount=type=cache,target=/root/.cache/pip pip install\n',
+            'RUN --mount=type=cache,target=/root/.cache/pip pip install\n',
+            'RUN --mount=type=cache,target=/root/.cache/pip pip install\n'
         ])
 
 

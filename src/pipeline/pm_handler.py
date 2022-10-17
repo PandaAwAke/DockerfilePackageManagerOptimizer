@@ -42,8 +42,6 @@ class PMHandler(object):
         :return: None
         """
 
-        # Key: pm_name, Value: [NeedAddCache(bool), NeedRemoveCommand(bool)]
-        # For example: {"npm": [True, False]}
         add_cache_pm_names = []
 
         # -------------------- Handling PM-related commands --------------------
@@ -91,7 +89,19 @@ class PMHandler(object):
                     if add_cache_pm_names.count(pm_name) == 0:
                         add_cache_pm_names.append(pm_name)
 
-            # Case for removing anti-cache commands: in RunHandler
+            # --------------- Try to generate RemoveOptionStrategy ---------------
+            # Case for removing anti-cache options
+            remove_options = []
+            for anti_cache_option in pm_setting.anti_cache_options:
+                for word in command:
+                    if word.s.strip() == anti_cache_option and remove_options.count(anti_cache_option) == 0:
+                        remove_options.append(anti_cache_option)
+            if len(remove_options) > 0:
+                self.optimization_strategies.append(RemoveOptionStrategy(
+                    instruction_index=instruction_index,
+                    command_index=command_index,
+                    remove_options=remove_options
+                ))
 
             # --------------- Try to generate InsertBeforeStrategy ---------------
             # Note: additional_pre_commands are only added once in a stage!

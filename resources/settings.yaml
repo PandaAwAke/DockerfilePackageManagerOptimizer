@@ -20,6 +20,9 @@ packageManagers:
       - .*download.*
     default-cache-dirs:
       - ~/.cache/pip
+    anti-cache-options:
+      - --no-cache
+      - --no-cache-dir
 
   apt:
     executables:
