@@ -67,7 +67,7 @@ def init_by_argv(argv):
             engine_settings.remove_command_with_true = True
 
     try:
-        engine_settings.fail_fileobj = open(file=engine_settings.fail_file, mode='w')
+        engine_settings.fail_fileobj = open(file=engine_settings.fail_file, mode='w', encoding='utf-8')
     except Exception as e:  # Including: IOError
         logging.error(e)
         exit(-1)

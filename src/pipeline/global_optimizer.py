@@ -85,7 +85,6 @@ class GlobalOptimizer:
                 syntax = self._get_syntax(s=value)
                 if syntax:
                     syntax_lower = syntax.lower()
-                    official_dockerfile_version = ''
                     need_to_add_syntax = False
                     if syntax_lower.startswith('docker/dockerfile:'):
                         official_dockerfile_version = syntax_lower[len('docker/dockerfile:'):]
@@ -94,14 +93,21 @@ class GlobalOptimizer:
                     else:
                         logging.error('This dockerfile uses a non-official frontend, I cannot handle this.')
                         raise handle_error.HandleError()
-                    versions = official_dockerfile_version.split('.')
-                    if len(versions) == 1 and versions[0] != '0':      # dockerfile:1
+
+                    official_dockerfile_version = official_dockerfile_version.strip()
+                    if re.match(r'^[0-9.]+$', official_dockerfile_version):
+                        versions = official_dockerfile_version.split('.')
+                        if len(versions) == 1 and versions[0] != '0':      # dockerfile:1
+                            need_to_update_syntax = False
+                            continue
+                        elif len(versions) >= 2:    # dockerfile:1.2
+                            if versions[0] != '0' and int(versions[1]) < 3:
+                                need_to_update_syntax = True
+                        break
+                    else:   # dockerfile:experimental, 1.3-lab, etc
                         need_to_update_syntax = False
                         continue
-                    elif len(versions) >= 2:    # dockerfile:1.2
-                        if versions[0] != '0' and int(versions[1]) < 3:
-                            need_to_update_syntax = True
-                    break
+
             syntax_line_index += 1
 
         if need_to_add_syntax:
@@ -114,7 +120,7 @@ class GlobalOptimizer:
     def _get_syntax(self, s: str):
         """
         Get the value of syntax directive.
-        For "# syntax=docker/dockerfile:1.3", this will return "1.3".
+        For "syntax=docker/dockerfile:1.3", this will return "1.3".
         If s isn't in this format, then this will return None.
 
         :param s: the string to parse.

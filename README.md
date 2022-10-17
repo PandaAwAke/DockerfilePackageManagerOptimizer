@@ -7,7 +7,7 @@ This tool is a dockerfile optimizer.
 
 ### Usage
 ```shell
-Usage: python main.py [OPTIONS] [INPUT]
+Usage: python src/main.py [OPTIONS] [INPUT]
 If INPUT is a directory, all files (including subdirectories) in it will be optimized.
 A logging file named 'DPMO.log' will be generated.
 

@@ -56,10 +56,7 @@ class PMHandler(object):
 
             # If firstly encountered this PM, create a PMStatus
             if pm_name not in self.pm_statuses.keys():
-                self.pm_statuses[pm_name] = PMHandler.PMStatus(
-                    cache_dirs=[context_util.replace_home_char(cache_dir, self.global_status)
-                                for cache_dir in pm_settings[pm_name].default_cache_dirs]
-                )
+                self.pm_statuses[pm_name] = PMHandler.PMStatus(cache_dirs=[])
 
             # Concatenate the command words as string to match the regexes.
             pm_command_str = str_util.join_command_words(command[1:])
@@ -117,7 +114,15 @@ class PMHandler(object):
             # --------------- Generate AddCacheStrategy ---------------
             if add_cache_strategy is None:
                 add_cache_strategy = AddCacheStrategy(instruction_index, [])
-            for cache_dir in pm_status.cache_dirs:
+
+            cache_dirs = pm_status.cache_dirs
+            if len(cache_dirs) == 0:
+                cache_dirs = [
+                    context_util.replace_home_char(cache_dir, self.global_status)
+                    for cache_dir in pm_settings[pm_name].default_cache_dirs
+                ]
+
+            for cache_dir in cache_dirs:
                 if cache_dir not in add_cache_strategy.cache_dirs:
                     add_cache_strategy.cache_dirs.append(cache_dir)
 

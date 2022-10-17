@@ -47,26 +47,30 @@ class StageSplitter(object):
             So the final structure of stages is:
             [(stage1_instructions, stage1_contexts), ..., (stagen_instructions, stagen_contexts)]
         """
-        if not self.dockerfile.is_multistage:
-            return [(self.dockerfile.structure, self.dockerfile.context_structure)]
-        else:
-            instructions = []
-            contexts = []
-            stages = []
-            first_stage = True
-            for i in range(len(self.dockerfile.structure)):
-                instruction = self.dockerfile.structure[i]
-                context = self.dockerfile.context_structure[i]
-                if instruction['instruction'] == 'FROM':
-                    if first_stage:
-                        first_stage = False
-                    else:
-                        stages.append((instructions, contexts))
-                        instructions = []
-                        contexts = []
-                instructions.append(instruction)
-                contexts.append(context)
-            if len(instructions) > 0:
-                stages.append((instructions, contexts))
-            return stages
+        try:
+            if not self.dockerfile.is_multistage:
+                return [(self.dockerfile.structure, self.dockerfile.context_structure)]
+            else:
+                instructions = []
+                contexts = []
+                stages = []
+                first_stage = True
+                for i in range(len(self.dockerfile.structure)):
+                    instruction = self.dockerfile.structure[i]
+                    context = self.dockerfile.context_structure[i]
+                    if instruction['instruction'] == 'FROM':
+                        if first_stage:
+                            first_stage = False
+                        else:
+                            stages.append((instructions, contexts))
+                            instructions = []
+                            contexts = []
+                    instructions.append(instruction)
+                    contexts.append(context)
+                if len(instructions) > 0:
+                    stages.append((instructions, contexts))
+                return stages
+        except Exception:
+            logging.error('Internal bug occurred in dockerfile_parse')
+            raise handle_error.HandleError()
 

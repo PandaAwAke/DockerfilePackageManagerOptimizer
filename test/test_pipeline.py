@@ -105,6 +105,25 @@ class TestAll(unittest.TestCase):
             'RUN echo 3  &&  echo 5\n', 'RUN echo 3\n',
             'RUN --mount=type=cache,target=/var/cache/apt --mount=type=cache,target=/var/lib/apt  apt-get install\n'])
 
+    def test_modify_cache_dir(self):
+        lines = [
+            'RUN npm run build',
+            'RUN npm config set prefix /root/npmcache',
+            'RUN npm run build',
+            'RUN pip install pandas',
+            'USER panda',
+            'RUN pip install pandas'
+        ]
+        result = self._execute_one_stage(lines)
+        self.assertEqual(result, [
+            'RUN --mount=type=cache,target=/root/.npm/ npm run build\n',
+            'RUN npm config set prefix /root/npmcache\n',
+            'RUN --mount=type=cache,target=/root/npmcache npm run build\n',
+            'RUN --mount=type=cache,target=/root/.cache/pip pip install pandas\n',
+            'USER panda\n',
+            'RUN --mount=type=cache,target=/home/panda/.cache/pip pip install pandas\n'
+        ])
+
 
 if __name__ == '__main__':
     unittest.main()
