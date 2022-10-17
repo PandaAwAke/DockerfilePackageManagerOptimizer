@@ -57,7 +57,7 @@ def connect_shell_command_string(commands: list, connectors: list) -> str:
         return ''
     commands_str = commands[0]
     for index in range(len(connectors)):
-        commands_str += ' {0} {1}'.format(connectors[index], commands[index + 1])
+        commands_str += '{0}{1}'.format(connectors[index], commands[index + 1])
     return commands_str
 
 
@@ -103,7 +103,7 @@ def _process_command_quotes_and_words(commands_str: str):
                 logging.error('Illegal RUN command: "{0}"'.format(commands_str))
                 raise handle_error.HandleError()
 
-            if len(content_outside_quote.strip()) == 0:
+            if len(content_outside_quote) > 0:
                 commands_str_split_words.append(CommandWord(content_outside_quote))
             content_outside_quote = ''
 
@@ -111,7 +111,7 @@ def _process_command_quotes_and_words(commands_str: str):
 
             commands_str_split_words.append(
                 CommandWord(content_inside_quote,
-                            CommandWord.SINGLE_QUOTED if commands_str == "'" else CommandWord.DOUBLE_QUOTED))
+                            CommandWord.SINGLE_QUOTED if commands_str[i] == "'" else CommandWord.DOUBLE_QUOTED))
             i = matched_quote
         else:
             content_outside_quote += commands_str[i]

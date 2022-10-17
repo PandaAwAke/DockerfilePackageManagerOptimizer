@@ -152,14 +152,14 @@ class StageOptimizer(object):
                 new_commands.append(commands[index])
                 new_connectors.append(connectors[index])
             elif engine_settings.remove_command_with_true:
-                new_commands.append('true')
+                new_commands.append(' true ')
                 new_connectors.append(connectors[index])
 
         # If the last command needs to be removed, then remove the connector before it
         if len(commands) - 1 in strategy.remove_command_indices:
             # Maybe anti-cache command is the only command in the instruction
             if engine_settings.remove_command_with_true:
-                new_commands.append('true')
+                new_commands.append(' true ')
             else:
                 if len(new_connectors) > 0:
                     new_connectors.pop()

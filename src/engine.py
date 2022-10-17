@@ -152,7 +152,11 @@ class Engine(object):
                     _optimizer = StageOptimizer(stage, dockerfile_in.lines)
                     strategies = _simulator.get_optimization_strategies()
                     total_strategies += len(strategies)
+
                     new_stage_lines = _optimizer.optimize(strategies)
+                    if stage is not stages[-1]:
+                        new_stage_lines.append('\n\n')
+
                     new_stages_lines.append(new_stage_lines)
 
                 if total_strategies > 0:

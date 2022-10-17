@@ -46,7 +46,7 @@ def join_command_words(command_words: list) -> str:
 
     command_str_list = []
     for cw in command_words:
-        if cw.kind in (CommandWord.NORMAL, CommandWord.EXEC_FORM_ARG):
+        if cw.kind in (CommandWord.NORMAL, CommandWord.EXEC_FORM_ARG) and len(cw.s.strip()) > 0:
             command_str_list.append(cw.s)
         elif cw.kind == CommandWord.SINGLE_QUOTED:
             command_str_list.append("'{}'".format(cw.s))
