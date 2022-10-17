@@ -127,12 +127,12 @@ class TestAll(unittest.TestCase):
             'RUN --mount=type=cache,target=/root/.npm-global npm install\n'
         ])
 
-
     def test_remove_anti_cache_options(self):
         lines = [
             'RUN pip --no-cache-dir install',
             'RUN pip --no-cache install',
             'RUN pip --no-cache-dir --no-cache install',
+            'RUN npm cache clean'
         ]
         result = self._execute_one_stage(lines)
         self.assertEqual(result, [

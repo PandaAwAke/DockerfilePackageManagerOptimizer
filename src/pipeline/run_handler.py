@@ -67,9 +67,9 @@ class RunHandler(object):
             elif self.pm_handler.is_package_manager_executable(executable):
                 pm_related_commands.append(command_words)
             # TODO: Handle Shell Script
-            else:
-                if self._need_remove_anti_cache_commands(command_words):
-                    remove_command_indices.append(index)
+
+            if self._need_remove_anti_cache_commands(command_words):
+                remove_command_indices.append(index)
 
         if len(pm_related_commands) > 0:
             self.pm_handler.handle(commands=pm_related_commands, instruction_index=instruction_index)

@@ -50,3 +50,5 @@ packageManagers:
 anti-cache-commands-regex:
   - ^rm\s+-r\S*\s+/var/lib/apt[\S\s]*$
   - ^rm\s+-r\S*\s+/var/cache/apt[\S\s]*$
+  - ^rm\s+-r\S*\s+/root/.npm[\S\s]*$
+  - ^npm\s+cache\s+clean$
