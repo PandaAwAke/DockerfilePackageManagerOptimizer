@@ -76,10 +76,10 @@ class PMHandler(object):
                 if match_result and len(match_result.groups()) > 0:  # This command will modify the cache dir
                     pm_status.cache_dirs = []
                     for new_cache_dir in match_result.groups():
+                        new_cache_dir = str_util.strip_and_dequote(new_cache_dir)
                         new_cache_dir = context_util.replace_home_char(new_cache_dir, self.global_status).strip()
                         new_cache_dir = context_util.get_absolute_path(new_cache_dir, self.global_status)
                         pm_status.cache_dirs.append(new_cache_dir)
-                    return
                 # TODO: Consider more conditions for modifying cache dir
 
             # Case for running the package manager's build/install process

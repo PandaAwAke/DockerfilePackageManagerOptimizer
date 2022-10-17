@@ -53,3 +53,12 @@ def join_command_words(command_words: list) -> str:
         elif cw.kind == CommandWord.DOUBLE_QUOTED:
             command_str_list.append('"{}"'.format(cw.s))
     return ' '.join(command_str_list)
+
+
+def strip_and_dequote(s: str) -> str:
+    s = s.strip()
+    while s[0] == "'" and s[-1] == "'":
+        s = s[1:-1]
+    while s[0] == '"' and s[-1] == '"':
+        s = s[1:-1]
+    return s

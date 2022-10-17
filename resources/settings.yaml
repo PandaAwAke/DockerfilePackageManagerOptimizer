@@ -3,9 +3,12 @@ packageManagers:
     executables:
       - npm
     commands-regex-run:
-      - run build
+      - run
+      - install
+      - update
+      - i\s*
     default-cache-dirs:
-      - ~/.npm/
+      - ~/.npm
     commands-regex-modify-cache-dir:
       - ^config set prefix (\S+)\s*
 
@@ -14,6 +17,7 @@ packageManagers:
       - pip
     commands-regex-run:
       - .*install.*
+      - .*download.*
     default-cache-dirs:
       - ~/.cache/pip
 
