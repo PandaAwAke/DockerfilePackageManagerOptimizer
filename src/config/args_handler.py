@@ -6,7 +6,7 @@ from config.engine_config import engine_settings
 
 def print_usage():
     usage = """\
-Usage: python main.py [OPTIONS] [INPUT]
+Usage: python src/main.py [OPTIONS] [INPUT]
 If INPUT is a directory, all files (including subdirectories) in it will be optimized.
 A logging file named 'DPMO.log' will be generated.
 
@@ -21,9 +21,9 @@ Options:
   -f FAIL_FILE  Output all dockerfiles that are failed to optimize into FAIL_FILE
                 FAIL_FILE is './DPMO_failures.txt' by default
   -w            Only show warning and error messages in the console
-  -t            Substitute the commands to remove with true when optimizing. If not specified,
-                DPMO will remove the command (and the connector after it if the connector exists)
-                when optimizing.
+  -n            If specified, DPMO will remove the commands to remove (and the connector after
+                it if the connector exists) when optimizing. By default they will be substituted
+                with 'true'.
 """
     print(usage)
 
@@ -36,7 +36,7 @@ def init_by_argv(argv):
     :return: None
     """
     try:
-        opts, args = getopt.getopt(argv, 'ho:s:Sf:wt')
+        opts, args = getopt.getopt(argv, 'ho:s:Sf:wn')
     except getopt.GetoptError as e:
         logging.error('Invalid option: "{0}"'.format(e.opt))
         exit(-1)
@@ -63,8 +63,8 @@ def init_by_argv(argv):
             engine_settings.fail_file = value
         elif option == '-w':
             engine_settings.logging_level = logging.WARNING
-        elif option == '-t':
-            engine_settings.remove_command_with_true = True
+        elif option == '-n':
+            engine_settings.remove_command_with_true = False
 
     try:
         engine_settings.fail_fileobj = open(file=engine_settings.fail_file, mode='w', encoding='utf-8')

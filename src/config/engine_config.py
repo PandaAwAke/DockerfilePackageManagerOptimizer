@@ -25,7 +25,7 @@ class EngineSettings(object):
         self.show_stats = False
         self.fail_file = './DPMO_failures.txt'
         self.fail_fileobj = None
-        self.remove_command_with_true = False
+        self.remove_command_with_true = True
         self.logging_level = logging.INFO
 
 

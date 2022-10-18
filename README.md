@@ -22,9 +22,9 @@ Options:
   -f FAIL_FILE  Output all dockerfiles that are failed to optimize into FAIL_FILE
                 FAIL_FILE is './DPMO_failures.txt' by default
   -w            Only show warning and error messages in the console
-  -t            Substitute the commands to remove with true when optimizing. If not specified,
-                DPMO will remove the command (and the connector after it if the connector exists)
-                when optimizing.
+  -n            If specified, DPMO will remove the commands to remove (and the connector after
+                it if the connector exists) when optimizing. By default they will be substituted
+                with 'true'.
 ```
 
 
