@@ -7,7 +7,7 @@ from model.command_word import CommandWord
 from model.global_status import GlobalStatus
 from model.optimization_strategy import RemoveCommandStrategy
 from pipeline.pm_handler import PMHandler
-from util import str_util, shell_util
+from util import str_util, shell_util, context_util
 
 
 class RunHandler(object):
@@ -51,6 +51,7 @@ class RunHandler(object):
         commands = self._handle_bash_c(commands, context)
 
         remove_command_indices = []
+        remove_command_contents = []
         # Now we got all commands in this RUN instruction!
         for index in range(len(commands)):
             command_words = commands[index]
@@ -63,7 +64,7 @@ class RunHandler(object):
             elif executable == 'usermod':
                 self._handle_usermod(command_words)
             elif executable == 'rm':
-                self._handle_rm(command_words)
+                self._handle_rm(command_words, index, remove_command_indices, remove_command_contents)
             # Handle Package Manager Command
             elif self.pm_handler.is_package_manager_executable(executable):
                 self.pm_handler.handle(command_index=index, command=command_words, instruction_index=instruction_index)
@@ -71,10 +72,11 @@ class RunHandler(object):
 
             if self._need_remove_anti_cache_commands(command_words):
                 remove_command_indices.append(index)
+                remove_command_contents.append(None)    # None indicates to remove the whole command
 
         # --------------- Generate RemoveCommandStrategy ---------------
         if len(remove_command_indices) > 0:
-            remove_command_strategy = RemoveCommandStrategy(instruction_index, remove_command_indices)
+            remove_command_strategy = RemoveCommandStrategy(instruction_index, remove_command_indices, remove_command_contents)
             self.optimization_strategies.append(remove_command_strategy)
 
     @staticmethod
@@ -196,14 +198,58 @@ class RunHandler(object):
                 real_user_home = '/root/'
         self.global_status.user_dirs[user_name] = real_user_home
 
-    def _handle_rm(self, command_words: list):
+    def _handle_rm(self, command_words: list, command_index: int,
+                   remove_command_indices: list, remove_command_contents: list):
         """
         Handle "rm" command, remove some directories if needed.
 
         :param command_words: a list of CommandWords.
         :return: None
         """
-        pass
+        pm_statuses = self.pm_handler.pm_statuses
+
+        all_cache_dirs = []
+        for pm_name, pm_status in pm_statuses.items():
+            cache_dirs = pm_status.cache_dirs
+            if len(cache_dirs) == 0:
+                cache_dirs = context_util.get_context_default_cache_dirs(pm_name, self.global_status)
+            for cache_dir in cache_dirs:
+                if cache_dir not in all_cache_dirs:
+                    assert cache_dir != ''
+                    all_cache_dirs.append(cache_dir)
+
+        contents_to_remove = []
+        have_directories_remaining = False
+        for command_word in command_words[1:]:
+            word = command_word.s.strip()
+            if word == '-r' or word == '-rf':
+                continue
+            word = context_util.replace_home_char(word, self.global_status)
+            word = context_util.get_absolute_path(word, self.global_status)
+
+            if word.startswith('/'):    # This word is a directory
+                for cache_dir in all_cache_dirs:
+                    if word.find(cache_dir) == 0:
+                        # Common path prefix, let's try to remove this directory
+                        if word not in contents_to_remove:
+                            # Add this rm directory to remove contents
+                            contents_to_remove.append(command_word.s.strip())
+                        break
+                else:
+                    # No cache directories matches this directory! Record this.
+                    have_directories_remaining = True
+
+        if len(contents_to_remove) == 0:    # Nothing will be removed, do nothing
+            return
+
+        if have_directories_remaining:
+            # Some directories needs to be removed, but not all
+            remove_command_indices.append(command_index)
+            remove_command_contents.append(contents_to_remove)
+        else:
+            # All directories needs to be removed, remove the whole command
+            remove_command_indices.append(command_index)
+            remove_command_contents.append(None)    # None indicates to remove the whole command
 
     @staticmethod
     def _need_remove_anti_cache_commands(command: list):

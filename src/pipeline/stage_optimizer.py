@@ -139,6 +139,7 @@ class StageOptimizer(object):
         :return: None
         """
         assert instruction['instruction'] == 'RUN'
+        assert len(strategy.remove_command_indices) == len(strategy.remove_command_contents) > 0
 
         # Parse the commands string again
         instruction_type, instruction_body = str_util.separate_instruction_type_body(instruction['content'])
@@ -147,29 +148,60 @@ class StageOptimizer(object):
         commands, connectors = shell_util.split_command_strings(instruction_body)
         assert len(connectors) == len(commands) - 1
 
-        # If the only command in this instruction needs to be removed, then remove the instruction
-        if len(commands) == 1 and 0 in strategy.remove_command_indices:
-            instruction['content'] = ''
-            return
+        # If all commands in this instruction needs to be removed, then remove the instruction
+        if len(commands) == len(strategy.remove_command_indices):
+            # All commands are ready to be removed
+            for content in strategy.remove_command_contents:
+                if content is not None:
+                    break   # Not all things need to be removed
+            else:
+                # All commands need to be removed
+                instruction['content'] = ''
+                return
 
-        # Remove the specified command, and the connector behind it
         new_commands, new_connectors = [], []
         for index in range(len(connectors)):
             if index not in strategy.remove_command_indices:
                 new_commands.append(commands[index])
                 new_connectors.append(connectors[index])
-            elif engine_settings.remove_command_with_true:
-                new_commands.append(' true ')
-                new_connectors.append(connectors[index])
-
-        # If the last command needs to be removed, then remove the connector before it
-        if len(commands) - 1 in strategy.remove_command_indices:
-            # Maybe anti-cache command is the only command in the instruction
-            if engine_settings.remove_command_with_true:
-                new_commands.append(' true ')
             else:
-                if len(new_connectors) > 0:
-                    new_connectors.pop()
+                remove_contents = strategy.remove_command_contents[strategy.remove_command_indices.index(index)]
+                if remove_contents is None:
+                    # Remove the whole command and the connector after it; or substitute it with 'true'
+                    if engine_settings.remove_command_with_true:
+                        new_commands.append(' true ')
+                        new_connectors.append(connectors[index])
+                else:
+                    # Remove all contents of remove_contents inside the command
+                    command = commands[index]
+                    executable, remain_command = command.split(maxsplit=1)
+                    remain_command = ' ' + remain_command
+                    for content in remove_contents:
+                        # Suppose there exists a space before the content. Remove them.
+                        remain_command = remain_command.replace(' ' + content, '', 1)
+                    new_commands.append(executable + remain_command)
+                    new_connectors.append(connectors[index])
+
+        # The last command
+        index = len(commands) - 1
+        if index in strategy.remove_command_indices:
+            remove_contents = strategy.remove_command_contents[strategy.remove_command_indices.index(index)]
+            if remove_contents is None:
+                # Remove the whole command and the connector before it; or substitute it with 'true'
+                if engine_settings.remove_command_with_true:
+                    new_commands.append(' true ')
+                else:
+                    if len(new_connectors) > 0:
+                        new_connectors.pop()
+            else:
+                # Remove all contents of remove_contents inside the command
+                command = commands[-1]
+                executable, remain_command = command.split(maxsplit=1)
+                remain_command = ' ' + remain_command
+                for content in remove_contents:
+                    # Suppose there exists a space before the content. Remove them.
+                    remain_command = remain_command.replace(' ' + content, '', 1)
+                new_commands.append(executable + remain_command)
         else:
             new_commands.append(commands[-1])
 

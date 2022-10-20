@@ -2,6 +2,7 @@ import logging
 
 import dockerfile_parse.util
 
+from config.optimization_config import pm_settings
 from model import handle_error
 from model.global_status import GlobalStatus
 from util import str_util
@@ -80,4 +81,11 @@ def get_mount_target_dirs(instruction, context) -> list:
         find_index = run_options_str.find('--mount=type=cache', find_index + len('--mount=type=cache'))
 
     return existing_target_dirs
+
+
+def get_context_default_cache_dirs(pm_name: str, global_status: GlobalStatus):
+    return [
+        replace_home_char(cache_dir, global_status)
+        for cache_dir in pm_settings[pm_name].default_cache_dirs
+    ]
 

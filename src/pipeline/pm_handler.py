@@ -72,6 +72,8 @@ class PMHandler(object):
                     new_cache_dir = str_util.strip_and_dequote(new_cache_dir)
                     new_cache_dir = context_util.replace_home_char(new_cache_dir, self.global_status).strip()
                     new_cache_dir = context_util.get_absolute_path(new_cache_dir, self.global_status)
+                    while new_cache_dir.endswith('/'):
+                        new_cache_dir = new_cache_dir[:-1]
                     pm_status.cache_dirs.append(new_cache_dir)
             # TODO: Consider more conditions for modifying cache dir
 
@@ -124,10 +126,7 @@ class PMHandler(object):
 
             cache_dirs = pm_status.cache_dirs
             if len(cache_dirs) == 0:
-                cache_dirs = [
-                    context_util.replace_home_char(cache_dir, self.global_status)
-                    for cache_dir in pm_settings[pm_name].default_cache_dirs
-                ]
+                cache_dirs = context_util.get_context_default_cache_dirs(pm_name, self.global_status)
 
             for cache_dir in cache_dirs:
                 if cache_dir not in add_cache_strategy.cache_dirs:

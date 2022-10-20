@@ -93,15 +93,16 @@ class TestAll(unittest.TestCase):
     def test_anti_cache(self):
         lines = [
             'RUN rm -rf /var/lib/apt/lists/*',
-            'RUN rm -rf /var/lib/apt/lists/* && apt-get update',
+            'RUN rm -rf /var/lib/apt/lists/* && apt-get update',    # Only "rm -rf" after apt-get update will be removed
             'RUN echo 3 && rm -rf /var/lib/apt/lists/* || echo 5',
             'RUN echo 3 && \\\n rm -rf /var/lib/apt/lists/*  ',
             'RUN --mount=type=cache,target=/var/lib/apt rm -rf /var/lib/apt/lists/* && apt-get install || rm -rf /var/cache/apt/*'
         ]
         result = self._execute_one_stage(lines)
         self.assertEqual(result, [
+            'RUN rm -rf /var/lib/apt/lists/*\n',
             'RUN rm -f /etc/apt/apt.conf.d/docker-clean; echo \'Binary::apt::APT::Keep-Downloaded-Packages "true";\' > /etc/apt/apt.conf.d/keep-cache\n',
-            'RUN --mount=type=cache,target=/var/lib/apt --mount=type=cache,target=/var/cache/apt  true && apt-get update\n',
+            'RUN --mount=type=cache,target=/var/lib/apt --mount=type=cache,target=/var/cache/apt rm -rf /var/lib/apt/lists/* && apt-get update\n',
             'RUN echo 3 && true || echo 5\n',
             'RUN echo 3 && true\n',
             'RUN --mount=type=cache,target=/var/cache/apt --mount=type=cache,target=/var/lib/apt  true && apt-get install || true\n'])
@@ -142,7 +143,27 @@ class TestAll(unittest.TestCase):
             'RUN --mount=type=cache,target=/root/.cache/pip pip install\n'
         ])
 
-
+    def test_complex_rm(self):
+        lines = [
+            'RUN useradd panda && pip --no-cache-dir install',
+            'USER panda',
+            'RUN pip --no-cache-dir --no-cache install',
+            'RUN pip install && rm -rf /root/.cache/pip || rm -rf rm',
+            'WORKDIR /home/panda/.cache',
+            'RUN rm -rf pip abc',
+            'RUN rm -rf /home/panda/.cache/pip abc',
+            'RUN rm -rf pip'
+        ]
+        result = self._execute_one_stage(lines)
+        self.assertEqual(result, [
+            'RUN --mount=type=cache,target=/root/.cache/pip useradd panda && pip install\n',
+            'USER panda\n',
+            'RUN --mount=type=cache,target=/home/panda/.cache/pip pip install\n',
+            'RUN --mount=type=cache,target=/home/panda/.cache/pip pip install && rm -rf /root/.cache/pip || rm -rf rm\n',
+            'WORKDIR /home/panda/.cache\n',
+            'RUN rm -rf abc\n',
+            'RUN rm -rf abc\n'
+        ])
 
 
 if __name__ == '__main__':
