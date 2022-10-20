@@ -71,7 +71,7 @@ class StageOptimizer(object):
                         self._optimize_remove_option(strategy=strategy, instruction=instruction)
 
                 # Some operations may cause empty lines, this is to remove empty instructions
-                if instruction['content'].strip() != instruction['instruction']:
+                if instruction['content'] != '' and instruction['content'].strip() != instruction['instruction']:
                     self.new_stage_lines.append(instruction['content'].strip() + '\n')
             else:
                 self.new_stage_lines.append(instruction['content'].strip() + '\n')
@@ -146,6 +146,11 @@ class StageOptimizer(object):
 
         commands, connectors = shell_util.split_command_strings(instruction_body)
         assert len(connectors) == len(commands) - 1
+
+        # If the only command in this instruction needs to be removed, then remove the instruction
+        if len(commands) == 1 and 0 in strategy.remove_command_indices:
+            instruction['content'] = ''
+            return
 
         # Remove the specified command, and the connector behind it
         new_commands, new_connectors = [], []

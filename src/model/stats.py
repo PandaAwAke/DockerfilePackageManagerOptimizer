@@ -104,10 +104,11 @@ class Stats(object):
         lines = ''
         for stat_tuple, filenames in sorted_dict_items:
             count = len(filenames)
-            lines += ' {},\t(Total: {}\t\tAddCache: {}\t\tInsertBefore: {}\t\tRemoveCommand: {}\tRemoveOption: {}) \n'\
+            lines += ' {},\t(Total: {}\t\tAddCache: {}\t\tInsertBefore: {}\t\tRemoveCommand: {}' \
+                     '\tRemoveOption: {}\t\tSyntaxChange: {}) \n'\
                 .format(
                     count,
-                    sum(stat_tuple), stat_tuple[0], stat_tuple[1], stat_tuple[2], stat_tuple[3],
+                    sum(stat_tuple), stat_tuple[0], stat_tuple[1], stat_tuple[2], stat_tuple[3], stat_tuple[4]
                 )
         return lines
 
@@ -149,8 +150,9 @@ class Stats(object):
             lines = []
             count = len(filenames)
             lines.append(
-                '{},\t(Total: {}\t\tAddCache: {}\t\tInsertBefore: {}\t\tRemoveCommand: {}\tRemoveOption: {})\n'.format(
-                    count, sum(stat_tuple), stat_tuple[0], stat_tuple[1], stat_tuple[2], stat_tuple[3]
+                '{},\t(Total: {}\t\tAddCache: {}\t\tInsertBefore: {}\t\tRemoveCommand: {}'
+                '\tRemoveOption: {}\t\tSyntaxChange: {})\n'.format(
+                    count, sum(stat_tuple), stat_tuple[0], stat_tuple[1], stat_tuple[2], stat_tuple[3], stat_tuple[4]
                 ))
             for filename in filenames:
                 lines.append(filename + '\n')
@@ -168,8 +170,9 @@ class Stats(object):
             self.insert_before_num,
             self.remove_command_num,
             self.remove_option_num,
+            self.syntax_change_num
         )
-        if sum(this_file) != 0:
+        if self.add_cache_num > 0:
             if self.total_optimization_dict.get(this_file):
                 self.total_optimization_dict[this_file].append(filename)
             else:

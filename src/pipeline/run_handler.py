@@ -50,7 +50,6 @@ class RunHandler(object):
             commands, _ = shell_util.process_shell_form(commands_str, context)
         commands = self._handle_bash_c(commands, context)
 
-        pm_related_commands = []
         remove_command_indices = []
         # Now we got all commands in this RUN instruction!
         for index in range(len(commands)):
@@ -63,17 +62,15 @@ class RunHandler(object):
                 self._handle_useradd(command_words)
             elif executable == 'usermod':
                 self._handle_usermod(command_words)
+            elif executable == 'rm':
+                self._handle_rm(command_words)
             # Handle Package Manager Command
             elif self.pm_handler.is_package_manager_executable(executable):
-                pm_related_commands.append(command_words)
+                self.pm_handler.handle(command_index=index, command=command_words, instruction_index=instruction_index)
             # TODO: Handle Shell Script
 
             if self._need_remove_anti_cache_commands(command_words):
                 remove_command_indices.append(index)
-
-        if len(pm_related_commands) > 0:
-            self.pm_handler.handle(commands=pm_related_commands, instruction_index=instruction_index)
-            # self.pm_handler.handle(commands=commands, instruction_index=instruction_index)
 
         # --------------- Generate RemoveCommandStrategy ---------------
         if len(remove_command_indices) > 0:
@@ -199,6 +196,15 @@ class RunHandler(object):
                 real_user_home = '/root/'
         self.global_status.user_dirs[user_name] = real_user_home
 
+    def _handle_rm(self, command_words: list):
+        """
+        Handle "rm" command, remove some directories if needed.
+
+        :param command_words: a list of CommandWords.
+        :return: None
+        """
+        pass
+
     @staticmethod
     def _need_remove_anti_cache_commands(command: list):
         """
@@ -214,4 +220,3 @@ class RunHandler(object):
             if match_result:
                 return True
         return False
-

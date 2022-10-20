@@ -56,7 +56,11 @@ packageManagers:
       - ~/.m2/repository
 
 anti-cache-commands-regex:
-  - ^rm\s+-r\S*\s+/var/lib/apt[\S\s]*$
-  - ^rm\s+-r\S*\s+/var/cache/apt[\S\s]*$
-  - ^rm\s+-r\S*\s+/root/.npm[\S\s]*$
-  - ^npm\s+cache\s+clean$
+  - ^rm[\S\s]*/var/lib/apt[\S\s]*$
+  - ^rm[\S\s]*/var/cache/apt[\S\s]*$
+  - ^rm[\S\s]*/root/\.npm[\S\s]*$
+  - ^rm[\S\s]*/root/\.cache[\S\s]*$
+  - ^rm[\S\s]*/root/\.m2[\S\s]*$
+  - ^apt(-get)?\s+(auto)?clean[\S\s]*$
+  - ^npm\s+cache\s+clean[\S\s]*$
+  - ^go\s+clean[\S\s]*$

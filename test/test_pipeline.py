@@ -101,9 +101,10 @@ class TestAll(unittest.TestCase):
         result = self._execute_one_stage(lines)
         self.assertEqual(result, [
             'RUN rm -f /etc/apt/apt.conf.d/docker-clean; echo \'Binary::apt::APT::Keep-Downloaded-Packages "true";\' > /etc/apt/apt.conf.d/keep-cache\n',
-            'RUN --mount=type=cache,target=/var/lib/apt --mount=type=cache,target=/var/cache/apt  apt-get update\n',
-            'RUN echo 3 && echo 5\n', 'RUN echo 3\n',
-            'RUN --mount=type=cache,target=/var/cache/apt --mount=type=cache,target=/var/lib/apt  apt-get install\n'])
+            'RUN --mount=type=cache,target=/var/lib/apt --mount=type=cache,target=/var/cache/apt  true && apt-get update\n',
+            'RUN echo 3 && true || echo 5\n',
+            'RUN echo 3 && true\n',
+            'RUN --mount=type=cache,target=/var/cache/apt --mount=type=cache,target=/var/lib/apt  true && apt-get install || true\n'])
 
     def test_modify_cache_dir(self):
         lines = [
@@ -129,14 +130,14 @@ class TestAll(unittest.TestCase):
 
     def test_remove_anti_cache_options(self):
         lines = [
-            'RUN pip --no-cache-dir install',
+            'RUN useradd panda && pip --no-cache-dir install',
             'RUN pip --no-cache install',
             'RUN pip --no-cache-dir --no-cache install',
             'RUN npm cache clean'
         ]
         result = self._execute_one_stage(lines)
         self.assertEqual(result, [
-            'RUN --mount=type=cache,target=/root/.cache/pip pip install\n',
+            'RUN --mount=type=cache,target=/root/.cache/pip useradd panda && pip install\n',
             'RUN --mount=type=cache,target=/root/.cache/pip pip install\n',
             'RUN --mount=type=cache,target=/root/.cache/pip pip install\n'
         ])
