@@ -8,22 +8,22 @@ def print_usage():
     usage = """\
 Usage: python src/main.py [OPTIONS] [INPUT]
 If INPUT is a directory, all files (including subdirectories) in it will be optimized.
-A logging file named 'DPMO.log' will be generated.
+A logging file named 'DPMO.log' and a result file named 'DPMO_stats.txt' will be generated.
 
 Options:
+  -f FAIL_FILE  Output all dockerfiles that are failed to optimize into FAIL_FILE
+                FAIL_FILE is './DPMO_failures.txt' by default
   -h            Display this help message and exit
+  -n            If specified, DPMO will remove the commands to remove (and the connector after
+                it if the connector exists) when optimizing. By default they will be substituted
+                with 'true'.
   -o OUTPUT     Optimized output dockerfile path, default to INPUT + SUFFIX
                 (SUFFIX is ".optimized" by default, so this will be "INPUT.optimized" by default)
                 If INPUT is a directory, then OUTPUT should be a directory too
   -s SUFFIX     Set the prefix of the output file, default to ".optimized"
                 If INPUT and OUTPUT both are directories, then SUFFIX will be ignored
   -S            Show optimization statistics for each file
-  -f FAIL_FILE  Output all dockerfiles that are failed to optimize into FAIL_FILE
-                FAIL_FILE is './DPMO_failures.txt' by default
   -w            Only show warning and error messages in the console
-  -n            If specified, DPMO will remove the commands to remove (and the connector after
-                it if the connector exists) when optimizing. By default they will be substituted
-                with 'true'.
 """
     print(usage)
 
@@ -68,6 +68,7 @@ def init_by_argv(argv):
 
     try:
         engine_settings.fail_fileobj = open(file=engine_settings.fail_file, mode='w', encoding='utf-8')
+        engine_settings.stat_fileobj = open(file='./DPMO_stats.txt', mode='w', encoding='utf-8')
     except Exception as e:  # Including: IOError
         logging.error(e)
         exit(-1)

@@ -23,6 +23,7 @@ from dockerfile_parse import DockerfileParser
 from config.engine_config import engine_settings
 from config.optimization_config import load_optimization_settings
 from model import handle_error
+from model.optimization_strategy import AddCacheStrategy
 from model.stats import stats
 from pipeline.dockerfile_writer import DockerfileWriter
 from pipeline.global_optimizer import GlobalOptimizer
@@ -99,7 +100,7 @@ class Engine(object):
                 self._run_one_file(engine_settings.input_file, engine_settings.input_file + engine_settings.suffix)
 
         logging.warning(stats.total_str())
-
+        stats.optimization_dict_write_stat_file()
 
     @staticmethod
     def _run_one_file(input_file: str, output_file: str):
@@ -145,21 +146,26 @@ class Engine(object):
 
             if valid_dockerfile:
                 new_stages_lines = []
-                total_strategies = 0
+                something_can_be_optimized = False
                 for stage in stages:  # stage is (instructions, contexts)
                     _simulator = StageSimulator(stage)
                     _simulator.simulate()
                     _optimizer = StageOptimizer(stage, dockerfile_in.lines)
                     strategies = _simulator.get_optimization_strategies()
-                    total_strategies += len(strategies)
 
-                    new_stage_lines = _optimizer.optimize(strategies)
+                    add_cache_strategies = len([s for s in strategies if isinstance(s, AddCacheStrategy)])
+                    if add_cache_strategies > 0:
+                        something_can_be_optimized = True
+                        new_stage_lines = _optimizer.optimize(strategies)
+                    else:
+                        new_stage_lines = _optimizer.optimize([])
+
                     if stage is not stages[-1]:
                         new_stage_lines.append('\n\n')
 
                     new_stages_lines.append(new_stage_lines)
 
-                if total_strategies > 0:
+                if something_can_be_optimized:
                     global_optimizer.optimize(stages, new_stages_lines)
                     writer = DockerfileWriter(dockerfile_out)
                     writer.write(new_stages_lines)
@@ -189,7 +195,7 @@ class Engine(object):
             if engine_settings.show_stats:
                 logging.info(stats.one_file_str())
 
-            stats.clear_one_file()
+            stats.finished_one_file(input_file)
 
     def _optimize_directory(self):
         """

@@ -6,6 +6,7 @@ test_dockerfiles/
 test_dockerfiles_output/
 DPMO_failures.txt
 DPMO.log
+DPMO_stats.txt
 tools/dockerfile_buildable.txt
 tools/dockerfile_buildable_timeout.txt
 

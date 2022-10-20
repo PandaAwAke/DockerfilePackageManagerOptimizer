@@ -200,7 +200,12 @@ class StageOptimizer(object):
             if command_index != strategy.command_index:
                 continue
             for option in sorted(strategy.remove_options, reverse=True):
-                commands[command_index] = commands[command_index].replace(' ' + option, '')
+                command = commands[command_index]
+                if command.find(' ' + option) != -1:
+                    commands[command_index] = command.replace(' ' + option, '')
+                else:
+                    commands[command_index] = command.replace(option, '')
+                stats.remove_option()  # Stats
             if len(commands[command_index].strip()) == 0:
                 commands[command_index] = ' true '
 
@@ -213,4 +218,3 @@ class StageOptimizer(object):
             new_content = new_content[:-1].strip()
 
         instruction['content'] = new_content
-        stats.remove_command()  # Stats

@@ -38,6 +38,7 @@ class Settings(object):
         self.timeout = 300
         self.start_file = None
         self.input_files = None
+        self.context = None
 
 
 settings = Settings()
@@ -62,11 +63,11 @@ Options:
                     message of the previous running.
 -i  INPUT_FILES     Describe all dockerfiles which will be tested. Every line inside it should
                     be the filepath of a dockerfile. If specified, INPUT_DIR will be ignored.
+-c  CONTEXT         Specify the build context. If not specified, context will be set to INPUT_DIR.
 
 The name of built image will be set to "dpmo_test_dockerfiles:buildable".
 
 Only a single dockerfile is considered, so the context of building doesn't matter.
-The default build context will be set to INPUT_DIR.
 """
     print(usage)
 
@@ -79,7 +80,7 @@ def _handle_argv(argv):
     :return: None
     """
     try:
-        opts, args = getopt.getopt(argv, 'o:f:t:s:i:')
+        opts, args = getopt.getopt(argv, 'o:f:t:s:i:c:')
     except getopt.GetoptError as e:
         logging.error('Invalid option: "{0}"'.format(e.opt))
         exit(-1)
@@ -102,24 +103,31 @@ def _handle_argv(argv):
             settings.start_file = value
         elif option == '-i':
             settings.input_files = value
+        elif option == '-c':
+            settings.context = value
 
 
-def _test_one_dockerfile(context_path, input_file, f_output, f_timeout_output, timeout):
+def _test_one_dockerfile(count, context_path, input_file, f_output, f_timeout_output, f_build_time_output, timeout):
     """
     Try to build a single dockerfile.
 
+    :param count: the count of the input_file
     :param context_path: the build context path.
     :param input_file: the path of the dockerfile.
-    :param f_output:
-    :param f_timeout_output:
-    :param timeout:
+    :param f_output: the output file object for successful builds.
+    :param f_timeout_output: the output file object for timeout builds.
+    :param timeout: timeout seconds.
     :return:
     """
-    logging.info('Testing "{0}"...'.format(input_file))
+    start_time = time.time()
+
+    logging.info('{} - Testing "{}"...'.format(count, input_file))
     command = [
         'docker', 'build',
         '-f', input_file,
-        '-t', '{}:{}'.format(os.path.basename(input_file).replace('.Dockerfile', ''), str(round(time.time()))),
+        '-t', '{}:{}'.format(
+            os.path.basename(input_file).replace('.Dockerfile', ''),
+            str(round(time.time()))),
         context_path
     ]
     if platform.system() != 'Windows':
@@ -130,8 +138,10 @@ def _test_one_dockerfile(context_path, input_file, f_output, f_timeout_output, t
     try:
         status = proc.wait(timeout=timeout)
         if status == 0:
+            end_time = time.time()
             logging.info('"{0}" is successfully built!'.format(input_file))
             f_output.write(input_file + '\n')
+            f_build_time_output.write("{}\n".format(end_time - start_time))
         else:
             logging.info('"{0}" failed to built.'.format(input_file))
     except subprocess.TimeoutExpired as e:
@@ -141,6 +151,7 @@ def _test_one_dockerfile(context_path, input_file, f_output, f_timeout_output, t
 
     f_output.flush()
     f_timeout_output.flush()
+    f_build_time_output.flush()
 
 
 if __name__ == '__main__':
@@ -160,40 +171,56 @@ if __name__ == '__main__':
     start_testing = False
     start_time = time.time()
 
+    if settings.context:
+        context_path = settings.context
+    else:
+        context_path = settings.input_dir
+
+    count = 0
     with open(settings.output_file, mode, encoding='utf-8') as f_output:
         with open(settings.timeout_file, mode, encoding='utf-8') as f_timeout_output:
-            if settings.input_files is None:
-                for current_dir, dirs, files in os.walk(settings.input_dir):
-                    for f in files:
-                        input_file = os.path.join(current_dir, f)
+            with open('build_success_times.txt', mode, encoding='utf-8') as f_build_time_output:
+                if settings.input_files is None:
+                    for current_dir, dirs, files in os.walk(settings.input_dir):
+                        for f in files:
+                            count += 1
+                            input_file = os.path.join(current_dir, f)
 
-                        if settings.start_file is None or input_file == settings.start_file.strip():
-                            start_testing = True
+                            if settings.start_file is None or input_file == settings.start_file.strip():
+                                start_testing = True
 
-                        if start_testing:
-                            _test_one_dockerfile(
-                                context_path=settings.input_dir,
-                                input_file=input_file,
-                                f_output=f_output,
-                                f_timeout_output=f_timeout_output,
-                                timeout=settings.timeout
-                            )
-            else:
-                with open(settings.input_files, 'r', encoding='utf-8') as f_input_files:
-                    for line in f_input_files.readlines():
-                        input_file = line.strip()
+                            if start_testing:
+                                _test_one_dockerfile(
+                                    count=count,
+                                    context_path=context_path,
+                                    input_file=input_file,
+                                    f_output=f_output,
+                                    f_timeout_output=f_timeout_output,
+                                    f_build_time_output=f_build_time_output,
+                                    timeout=settings.timeout
+                                )
 
-                        if settings.start_file is None or input_file == settings.start_file.strip():
-                            start_testing = True
+                else:
+                    with open(settings.input_files, 'r', encoding='utf-8') as f_input_files:
+                        line = f_input_files.readline()
+                        while len(line) > 0:
+                            count += 1
+                            input_file = line.strip()
 
-                        if start_testing:
-                            _test_one_dockerfile(
-                                context_path=settings.input_dir,
-                                input_file=input_file,
-                                f_output=f_output,
-                                f_timeout_output=f_timeout_output,
-                                timeout=settings.timeout
-                            )
+                            if settings.start_file is None or input_file == settings.start_file.strip():
+                                start_testing = True
+
+                            if start_testing:
+                                _test_one_dockerfile(
+                                    count=count,
+                                    context_path=context_path,
+                                    input_file=input_file,
+                                    f_output=f_output,
+                                    f_timeout_output=f_timeout_output,
+                                    f_build_time_output=f_build_time_output,
+                                    timeout=settings.timeout
+                                )
+                            line = f_input_files.readline()
 
     end_time = time.time()
     logging.warning("Seconds used: {}".format(end_time - start_time))
