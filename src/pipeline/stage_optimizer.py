@@ -173,13 +173,15 @@ class StageOptimizer(object):
                         new_connectors.append(connectors[index])
                 else:
                     # Remove all contents of remove_contents inside the command
-                    command = commands[index]
+                    command = commands[index].strip()
+                    while len(command) > 0 and command[0] == '\\':
+                        command = command[1:].strip()
                     executable, remain_command = command.split(maxsplit=1)
                     remain_command = ' ' + remain_command
                     for content in remove_contents:
                         # Suppose there exists a space before the content. Remove them.
                         remain_command = remain_command.replace(' ' + content, '', 1)
-                    new_commands.append(executable + remain_command)
+                    new_commands.append(' ' + executable + remain_command)
                     new_connectors.append(connectors[index])
 
         # The last command
@@ -195,13 +197,15 @@ class StageOptimizer(object):
                         new_connectors.pop()
             else:
                 # Remove all contents of remove_contents inside the command
-                command = commands[-1]
+                command = commands[-1].strip()
+                while len(command) > 0 and command[0] == '\\':
+                    command = command[1:].strip()
                 executable, remain_command = command.split(maxsplit=1)
                 remain_command = ' ' + remain_command
                 for content in remove_contents:
                     # Suppose there exists a space before the content. Remove them.
                     remain_command = remain_command.replace(' ' + content, '', 1)
-                new_commands.append(executable + remain_command)
+                new_commands.append(' ' + executable + remain_command)
         else:
             new_commands.append(commands[-1])
 
