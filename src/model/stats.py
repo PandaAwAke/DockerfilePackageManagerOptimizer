@@ -165,14 +165,14 @@ class Stats(object):
 
         :return:
         """
-        this_file = (
-            self.add_cache_num,
-            self.insert_before_num,
-            self.remove_command_num,
-            self.remove_option_num,
-            self.syntax_change_num
-        )
         if self.add_cache_num > 0:
+            this_file = (
+                self.add_cache_num,
+                self.insert_before_num,
+                self.remove_command_num,
+                self.remove_option_num,
+                self.syntax_change_num
+            )
             if self.total_optimization_dict.get(this_file):
                 self.total_optimization_dict[this_file].append(filename)
             else:

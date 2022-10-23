@@ -63,26 +63,25 @@ def connect_shell_command_string(commands: list, connectors: list) -> str:
 
 def _process_command_quotes_and_words(commands_str: str):
     """
-    Parse the commands_str behind RUN (shell-form).
-    All command words inside commands_str (connected with &&, ||, ;, etc) will be returned.
-    Note: escape character will not be translated inside double quotes, but \" inside
-          double quotes will not be recognized as the end of the double quote.
-          ENV variables will not be substituted.
+    Only split the commands_str into:
+    - Single Quoted CommandWords
+    - Double Quoted CommandWords
+    - Other Content Normao CommandWords
 
     Examples:
     ->  apt-get install python3-pip && echo "hello, world!"
     <-  [
-            CommandWord('apt-get'), CommandWord('install'), CommandWord('python3-pip'),
-            CommandWord('&&'), CommandWord('echo'), CommandWord('hello, world!', DOUBLE_QUOTED)
+            CommandWord('apt-get install python3-pip && echo '),
+            CommandWord('hello, world!', DOUBLE_QUOTED)
         ]
     ->  echo 'ab\"cd' && echo "ab\"cd"
     <-  [
-            CommandWord('echo'), CommandWord('ab\\"cd', SINGLE_QUOTED), CommandWord('&&'),
-            CommandWord('echo'), CommandWord('ab\\"cd', DOUBLE_QUOTED)
+            CommandWord('echo '), CommandWord('ab\\"cd', SINGLE_QUOTED),
+            CommandWord(' && echo '), CommandWord('ab\\"cd', DOUBLE_QUOTED)
         ]
 
-    :param commands_str: the shell-form commands string, for example 'apt-get update && apt install gcc'
-    :return: commands, connectors.
+    :param commands_str: the commands string, for example 'apt-get update && apt install gcc'
+    :return: a list of CommandWords
     """
     # Handling shell-form
     commands_str_split_words = []
@@ -184,6 +183,7 @@ def process_shell_form(commands_str: str, context):
           double quotes can be recognized.
           ENV variables are substituted too (including string inside double quotes).
           Brackets outside quotes will be removed.
+          "DEBIAN_FRONTEND=noninteractive" will be removed.
 
     Examples:
     ->  apt-get install python3-pip && echo "hello, world!"
@@ -237,8 +237,8 @@ def process_shell_form(commands_str: str, context):
             for connector_index, connector_kind in connector_indices_kinds:
                 command_words.extend([
                     CommandWord(word) for word in s[pre_connector_end_index: connector_index].strip().split()
+                    if word != 'DEBIAN_FRONTEND=noninteractive'
                 ])
-
                 commands.append(command_words)
                 connectors.append(connector_kind)
                 pre_connector_end_index = connector_index + len(connector_kind)
@@ -246,6 +246,7 @@ def process_shell_form(commands_str: str, context):
 
             command_words.extend([
                 CommandWord(word) for word in s[pre_connector_end_index:].strip().split()
+                if word != 'DEBIAN_FRONTEND=noninteractive'
             ])
     commands.append(command_words)
     return commands, connectors

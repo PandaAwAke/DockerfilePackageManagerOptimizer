@@ -4,6 +4,7 @@ FROM devdocker.mulesoft.com:18078/mulesoft/core-paas-base-image-node-8.12:v2.0.7
 
 USER root
 
+RUN DEBIAN_FRONTEND=noninteractive apt-get update
 # Add dependencies and setup working directory
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \

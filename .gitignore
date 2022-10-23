@@ -9,6 +9,7 @@ DPMO.log
 DPMO_stats.txt
 tools/dockerfile_buildable.txt
 tools/dockerfile_buildable_timeout.txt
+tools/build_success_times.txt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -15,6 +15,7 @@ packageManagers:
   pip:
     executables:
       - pip
+      - pip3
     commands-regex-run:
       - .*install.*
       - .*download.*
