@@ -1,7 +1,27 @@
 # Dockerfile Package Manager Optimizer
 ## Introduction
 
-This tool is a dockerfile optimizer.
+This tool (DPMO) is a dockerfile package manager optimizer. It uses "RUN --mount=type=cache" new BuildKit frontend feature to automatically optimize your Dockerfile with almost no side-effects!
+
+["RUN --mount=type=cache" Dockerfile reference | Docker Documentation](https://docs.docker.com/engine/reference/builder/#run---mounttypecache)
+
+[BuildKit Frontend Syntax images | Docker Hub](https://hub.docker.com/r/docker/dockerfile)
+
+
+
+We have evaluated DPMO. For those Dockerfiles that use package managers, DPMO has an **83.20% optimization rate** (10488/12606). Dockerfiles optimized by DPMO have a 99.55% (221/222) successful build rate (the situations that DPMO may fail is illustrated later). Optimized Dockerfiles will manage package managers better. Images built from new Dockerfiles are reduced in size by an average of 12.48MB, network data traffic is reduced by an average of 24.25MB.
+
+
+
+The situations in which DPMO may not work or may fail (We only encountered situation 5 in practice):
+
+1. BuildKit is disabled in your environment
+2. A non-official frontend dockerfile syntax is used in your Dockerfile
+3. Except download/install package manager commands (such as `go get`, `apt install`), cache of package managers is needed in build process
+4. Cache of package manager (generated from building process) is needed when future container is running
+5. Cache directories of package managers must have non-root privileges
+
+
 
 
 
@@ -68,16 +88,19 @@ python src/main.py -o dockerfiles_output dockerfiles
 
 Note that only dockerfiles using package managers can be optimized.
 
-Currently supported package managers:
+
+
+### Currently supported package managers
 
 * Third-party package managers
   * npm
   * pip
   * go
+  * maven
 * OS package managers
   * apt
 
-More package managers will be supported in the future. All configurations for package managers are defined in `resources/settings.yaml`.
+All configurations for package managers are defined in `resources/settings.yaml`. All rules that DPMO will execute are from this file. You can add your package managers if you need it.
 
 
 
@@ -97,17 +120,6 @@ Since `docker/dockerfile:1.2`, `RUN --mount=type=cache` is added. With this flag
 
 ### How does it work?
 
-The brief workflow is depicted in the figure:
+The workflow is depicted in the figure:
 
-![image-20221002151534230](README.assets/image-20221002151534230.png)
-
-
-
-## Things to do next:
-
-* ~~Better place to InsertBefore~~
-* Parse shell scripts
-* More support for cache directory modification
-* ~~Support removing cache-disable commands (such as rm -r /var/lib/apt)~~
-* Support detection of subdirectory path
-* ~~Better Logging~~
+![Pipeline](README.assets/pipeline.jpg)
