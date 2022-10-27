@@ -53,7 +53,7 @@ packageManagers:
       - mvn
       - ./mvnw
     commands-regex-run:
-      - .+
+      - .*
     default-cache-dirs:
       - ~/.m2/repository
 

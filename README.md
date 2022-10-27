@@ -13,7 +13,7 @@ We have evaluated DPMO. For those Dockerfiles that use package managers, DPMO ha
 
 
 
-The situations in which DPMO may not work or may fail (We only encountered situation 5 in practice):
+The situations in which DPMO may not work or may fail (**We only encountered situation 5 in practice**):
 
 1. BuildKit is disabled in your environment
 2. A non-official frontend dockerfile syntax is used in your Dockerfile
