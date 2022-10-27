@@ -51,6 +51,7 @@ packageManagers:
   maven:
     executables:
       - mvn
+      - ./mvnw
     commands-regex-run:
       - .+
     default-cache-dirs:
