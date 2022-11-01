@@ -1,5 +1,6 @@
 import getopt
 import logging
+import sys
 
 from config.engine_config import engine_settings
 
@@ -39,16 +40,13 @@ def init_by_argv(argv):
         opts, args = getopt.getopt(argv, 'ho:s:Sf:wn')
     except getopt.GetoptError as e:
         logging.error('Invalid option: "{0}"'.format(e.opt))
-        exit(-1)
-        return
+        sys.exit(-1)
     if len(opts) > 0 and opts[0][0] == '-h':
         print_usage()
-        exit(0)
-        return
+        sys.exit(0)
     if len(args) == 0:
         logging.error('Input path is empty!')
-        exit(-1)
-        return
+        sys.exit(-1)
 
     engine_settings.input_file = args[0]
 
@@ -71,8 +69,7 @@ def init_by_argv(argv):
         engine_settings.stat_fileobj = open(file='./DPMO_stats.txt', mode='w', encoding='utf-8')
     except Exception as e:  # Including: IOError
         logging.error(e)
-        exit(-1)
-        return
+        sys.exit(-1)
 
     init_logger()
 

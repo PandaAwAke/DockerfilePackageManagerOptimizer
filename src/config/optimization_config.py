@@ -1,6 +1,7 @@
 import logging
 
 import yaml
+import sys
 
 from config.engine_config import global_settings
 
@@ -65,8 +66,7 @@ def load_optimization_settings():
         pm_yaml_settings = yaml.safe_load(f)
     except Exception as e:  # Including: IOError, yaml.YAMLError
         logging.error(e)
-        exit(-1)
-        return
+        sys.exit(-1)
 
     global global_opt_settings
     global_opt_settings = GlobalOptimizationSettings()
@@ -87,12 +87,10 @@ def load_optimization_settings():
 
         if len(pm_setting.commands_regex_run) == 0:
             logging.error('commands-regex-run is not set for "{0}"!'.format(pm_name))
-            exit(-1)
-            return
+            sys.exit(-1)
         if len(pm_setting.default_cache_dirs) == 0:
             logging.error('default-cache-dirs is not set for "{0}"!'.format(pm_name))
-            exit(-1)
-            return
+            sys.exit(-1)
         pm_settings[pm_name] = pm_setting
     f.close()
 

@@ -17,6 +17,7 @@ limitations under the License.
 
 import logging
 import os
+import sys
 
 from dockerfile_parse import DockerfileParser
 
@@ -82,8 +83,7 @@ class Engine(object):
                 if os.path.exists(engine_settings.output_file) and \
                         not os.path.isdir(engine_settings.output_file):
                     logging.error("INPUT is a directory, but OUTPUT isn't!")
-                    exit(-1)
-                    return
+                    sys.exit(-1)
                 self._create_output_directory(engine_settings.output_file)
             self._optimize_directory()
         else:       # Input is a file

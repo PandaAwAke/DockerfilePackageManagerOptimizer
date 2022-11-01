@@ -83,12 +83,10 @@ def _handle_argv(argv):
         opts, args = getopt.getopt(argv, 'o:f:t:s:i:c:')
     except getopt.GetoptError as e:
         logging.error('Invalid option: "{0}"'.format(e.opt))
-        exit(-1)
-        return
+        sys.exit(-1)
     if len(args) == 0:
         logging.error('Input path is empty!')
-        exit(-1)
-        return
+        sys.exit(-1)
 
     settings.input_dir = args[0]
 
@@ -158,7 +156,7 @@ if __name__ == '__main__':
     argv = sys.argv
     if len(argv) < 2:
         _print_usage()
-        exit(-1)
+        sys.exit(-1)
 
     _handle_argv(argv[1:])
 
