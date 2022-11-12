@@ -229,7 +229,7 @@ class RunHandler(object):
 
             if word.startswith('/'):    # This word is a directory
                 for cache_dir in all_cache_dirs:
-                    if word.find(cache_dir) == 0:
+                    if word.find(cache_dir) == 0 or cache_dir.find(word) == 0:
                         # Common path prefix, let's try to remove this directory
                         if word not in contents_to_remove:
                             # Add this rm directory to remove contents

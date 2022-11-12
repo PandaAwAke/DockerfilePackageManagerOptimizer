@@ -128,11 +128,13 @@ def _test_one_dockerfile(count, context_path, input_file, f_output, f_timeout_ou
             str(round(time.time()))),
         context_path
     ]
+
+    env = None
     if platform.system() != 'Windows':
-        command = ['DOCKER_BUILDKIT=1'] + command
+        env = {'DOCKER_BUILDKIT': '1'}
 
     dev_null = open(os.devnull, 'w')
-    proc = subprocess.Popen(command, stdout=dev_null, stderr=dev_null)
+    proc = subprocess.Popen(command, stdout=dev_null, stderr=dev_null, env=env)
     try:
         status = proc.wait(timeout=timeout)
         if status == 0:
