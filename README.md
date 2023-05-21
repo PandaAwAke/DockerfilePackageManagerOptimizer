@@ -9,17 +9,20 @@ This tool (DPMO) is a dockerfile package manager optimizer. It uses "RUN --mount
 
 
 
-We have evaluated DPMO. For those Dockerfiles that use package managers, DPMO has an **83.20% optimization rate** (10488/12606). Dockerfiles optimized by DPMO have a 99.55% (221/222) successful build rate (the situations that DPMO may fail is illustrated later). Optimized Dockerfiles will manage package managers better. Images built from new Dockerfiles are reduced in size by an average of 12.48MB, network data traffic is reduced by an average of 24.25MB.
+We have evaluated the prototype of DPMO. The git commit used for evaluaion is 4bb8958e082d5070331130d9d3724510705588ec. In this version, DPMO used a simple configuration that supports apt, pip, npm, go, maven. Better results can be achieved if more package managers were configured, or existing configurations were optimized. Here are the results of our evaluation.
+
+For those Dockerfiles that use package managers (specifically: apt, pip, npm, apk, yum, go, docker-php-ext-install, composer, gem, maven, bower, cargo, gradle), DPMO has an **71.36**% optimization rate (10488/14696). Dockerfiles optimized by DPMO have a **99.55**% (221/222) successful build rate (the situations that DPMO may fail is illustrated later). Optimized Dockerfiles will manage package managers better. Images built from new Dockerfiles are reduced in size by an average of **12.48MB** (1.97%). Network data traffic during the build process can be reduced by an average of 24.25MB. Build or rebuild time can be reduced by **5% ~ 40%**.
 
 
 
-The situations in which DPMO may not work or may fail (**We only encountered situation 5 in practice**):
+The situations in which DPMO may not work or may fail:
 
-1. BuildKit is disabled in your environment
-2. A non-official frontend dockerfile syntax is used in your Dockerfile
-3. Except download/install package manager commands (such as `go get`, `apt install`), cache of package managers is needed in build process
-4. Cache of package manager (generated from building process) is needed when future container is running
-5. Cache directories of package managers must have non-root privileges
+1. **Cache directories of package managers must have non-root privileges**. This is the only situation we encountered in practice.
+2. **You don't want to reuse the package manager's cache in any of your builds**.
+3. BuildKit is disabled or unavailable in your environment.
+4. A non-official frontend dockerfile syntax is used in your Dockerfile.
+5. Except download/install package manager commands (such as `go get`, `apt install`), cache of package managers is needed in build process.
+6. Cache of package manager (generated from building process) is needed when future container is running.
 
 
 
